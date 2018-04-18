@@ -1,8 +1,15 @@
 {
-    "files.exclude": {
-        "**/.git": true,
-        "**/.DS_Store": true,
-        "tmp": true
-    },
-    "typescript.tsdk": "node_modules/typescript/lib"
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "tmp": true,
+    "node_modules": true,
+    "dist": true
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "editor.formatOnSave": true,
+  "[markdown]": {
+    "editor.formatOnSave": false
+  },
+  "tslint.autoFixOnSave": true
 }

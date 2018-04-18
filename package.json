@@ -8,9 +8,7 @@
   "ember-addon": {
     "main": "ember-addon.js"
   },
-  "keywords": [
-    "ember-addon"
-  ],
+  "keywords": ["ember-addon"],
   "scripts": {
     "problems": "node ./scripts/problems.js",
     "preversion": "npm run test",
@@ -24,14 +22,19 @@
   "license": "MIT",
   "devDependencies": {
     "@types/qunit": "^2.0.31",
+    "@types/commonmark": "^0.27.0",
     "ember-cli": "^2.18.2",
     "libkit": "^0.5.19",
     "qunitjs": "^2.4.0",
     "shelljs": "^0.7.8",
     "tslint": "^5.7.0",
-    "typescript": "^2.4.2"
+    "typescript": "~2.8.0",
+    "prettier": "^1.12.0"
   },
   "dependencies": {
-    "ts-std": "^0.6.2"
+    "ts-std": "^0.6.2",
+    "@cross-check/dsl": "^0.7.8",
+    "@cross-check/core": "^0.7.4",
+    "no-show": "^0.6.2"
   }
 }
