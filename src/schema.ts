@@ -7,7 +7,7 @@ import {
 import build, { ValidationBuilder, validators } from "@cross-check/dsl";
 import { Task } from "no-show";
 import { Dict, dict, entries, unknown } from "ts-std";
-import { DictionaryLabel, Label } from "./types/label";
+import { DictionaryLabel, Label } from "./types/describe";
 import { AsType, Primitive } from "./types/type";
 
 export default class Schema {
