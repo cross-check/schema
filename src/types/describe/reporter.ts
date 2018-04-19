@@ -31,22 +31,42 @@ export class Reporter {
     return this.stack[this.stack.length - 1];
   }
 
-  startDictionary(): void {
+  startDictionary(position: Position): void {
     ifHasEvent(this.state, "startDictionary", state => {
-      state.startDictionary();
+      state.startDictionary(position);
     });
   }
 
-  addKey(name: string, optionality: Optionality): void {
+  addKey(name: string, position: Position, optionality: Optionality): void {
     ifHasEvent(this.state, "addKey", state => {
-      state.addKey(name, optionality);
+      state.addKey(name, position, optionality);
     });
   }
 
-  endDictionary(): void {
-    ifHasEvent(this.state, "endDictionary", state => {
-      state.endDictionary();
+  endDictionary(position: Position, optionality: Optionality): void {
+    let repeat: true | void = true;
+
+    while (repeat) {
+      repeat = ifHasEvent(this.state, "endDictionary", state => {
+        return state.endDictionary(position, optionality);
+      });
+    }
+  }
+
+  startPrimitiveValue(position: Position): void {
+    ifHasEvent(this.state, "startPrimitiveValue", state => {
+      state.startPrimitiveValue(position);
     });
+  }
+
+  endPrimitiveValue(position: Position): void {
+    let repeat: true | void = true;
+
+    while (repeat) {
+      repeat = ifHasEvent(this.state, "endPrimitiveValue", state => {
+        return state.endPrimitiveValue(position);
+      });
+    }
   }
 
   primitiveValue(type: Label): void {
@@ -55,16 +75,20 @@ export class Reporter {
     });
   }
 
-  startListValue(): void {
+  startListValue(position: Position): void {
     ifHasEvent(this.state, "startListValue", state => {
-      state.startListValue();
+      state.startListValue(position);
     });
   }
 
-  endListValue(): void {
-    ifHasEvent(this.state, "endListValue", state => {
-      state.endListValue();
-    });
+  endListValue(position: Position): void {
+    let repeat: true | void = true;
+
+    while (repeat) {
+      repeat = ifHasEvent(this.state, "endListValue", state => {
+        return state.endListValue(position);
+      });
+    }
   }
 }
 
@@ -72,6 +96,13 @@ export interface ReporterStateConstructor {
   new (buffer: Buffer, pad: number, stack: ReporterState[]): ReporterState;
 }
 
+export enum Position {
+  First,
+  Last,
+  Middle,
+  WholeSchema,
+  Only
+}
 export abstract class ReporterState {
   constructor(
     protected buffer: Buffer,
@@ -97,30 +128,31 @@ export abstract class ReporterState {
     console.groupEnd();
   }
 
-  startDictionary?(): void;
-  addKey?(key: string, optionality: Optionality): void;
-  endDictionary?(): void;
-  startListValue?(): void;
+  startDictionary?(position: Position): void;
+  addKey?(key: string, position: Position, optionality: Optionality): void;
+  endDictionary?(position: Position, optionality: Optionality): true | void;
+  startListValue?(position: Position): void;
   listValue?(
     description: string,
     typescript: string,
     optionality: Optionality
   ): void;
-  endListValue?(): void;
-  startTuple?(): void;
-  endTuple?(): void;
+  endListValue?(position: Position): true | void;
+  startTuple?(position: Position): void;
+  endTuple?(position: Position): true | void;
   startGeneric?(name: string): void;
-  endGeneric?(): void;
+  endGeneric?(): true | void;
+  startPrimitiveValue?(position: Position): void;
   primitiveValue?(type: Label): void;
+  endPrimitiveValue?(position: Position): true | void;
 }
 
-function ifHasEvent<K extends keyof ReporterState>(
-  state: ReporterState,
-  name: K,
-  callback: (state: ReporterState & Required<Pick<ReporterState, K>>) => void
-): void {
+function ifHasEvent<
+  K extends keyof ReporterState,
+  C extends (state: ReporterState & Required<Pick<ReporterState, K>>) => any
+>(state: ReporterState, name: K, callback: C): ReturnType<C> {
   if (hasEvent(state, name)) {
-    callback(state);
+    return callback(state);
   } else {
     state.debug();
     throw new Error(

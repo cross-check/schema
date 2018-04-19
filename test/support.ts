@@ -14,5 +14,5 @@ export const isDate: ValidationBuilder<string> = validators.is(
 
 export const ISODate: TypeFunction = primitive(
   isDate,
-  primitiveLabel("date", "date")
+  primitiveLabel({ name: "Date" }, "ISO Date", "Date")
 );

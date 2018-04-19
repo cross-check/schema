@@ -4,6 +4,7 @@ import {
   Record,
   Schema,
   describe,
+  schemaFormat,
   types,
   typescript
 } from "copilot-schema";
@@ -51,22 +52,65 @@ function error(kind: string, problem: unknown, path: string) {
 QUnit.test("labels", assert => {
   assert.equal(
     describe(SIMPLE.label),
-    `{\n  hed: <single line string>,\n  dek?: <string>,\n  body: <string>\n}`
+
+    // prettier-ignore
+    prettyPrint({
+      "hed": "<single line string>",
+      "dek?": "<string>",
+      "body": "<string>"
+    })
   );
 
   assert.equal(
     describe(SIMPLE.draft.label),
-    `{\n  hed?: <string>,\n  dek?: <string>,\n  body?: <string>\n}`
+    prettyPrint({
+      "hed?": "<string>",
+      "dek?": "<string>",
+      "body?": "<string>"
+    })
   );
 
   assert.equal(
     typescript(SIMPLE.label),
-    `{\n  hed: string,\n  dek?: string,\n  body: string\n}`
+
+    // prettier-ignore
+    prettyPrint({
+      "hed": "string",
+      "dek?": "string",
+      "body": "string"
+    }, FORMAT_TS)
   );
 
   assert.equal(
     typescript(SIMPLE.draft.label),
-    `{\n  hed?: string,\n  dek?: string,\n  body?: string\n}`
+    prettyPrint(
+      {
+        "hed?": "string",
+        "dek?": "string",
+        "body?": "string"
+      },
+      FORMAT_TS
+    )
+  );
+
+  assert.equal(
+    schemaFormat(SIMPLE.label),
+
+    // prettier-ignore
+    prettyPrint({
+      hed: "SingleLine().required()",
+      dek: "Text()",
+      body: "Text().required()"
+    })
+  );
+
+  assert.equal(
+    schemaFormat(SIMPLE.draft.label),
+    prettyPrint({
+      hed: "Text()",
+      dek: "Text()",
+      body: "Text()"
+    })
   );
 });
 
@@ -130,28 +174,165 @@ const DETAILED = new Schema("medium-article", {
   canonicalUrl: Url(),
   tags: List(SingleLine()),
   categories: List(SingleLine()).required(),
-  geo: Dictionary({ lat: Num().required(), long: Num().required() })
+  geo: Dictionary({ lat: Num().required(), long: Num().required() }),
+  contributors: List(Dictionary({ first: SingleLine(), last: SingleLine() }))
 });
 
 QUnit.test("labels", assert => {
   assert.equal(
     describe(DETAILED.label),
-    `{\n  hed: <single line string>,\n  dek?: <string>,\n  body: <string>\n}`
+
+    // prettier-ignore
+    prettyPrint({
+      "hed": "<single line string>",
+      "dek?": "<string>",
+      "body": "<string>",
+      "author?": {
+        "first?": "<single line string>",
+        "last?": "<single line string>"
+      },
+      "issueDate?": "<ISO Date>",
+      "canonicalUrl?": "<url>",
+      "tags?": "list of <single line string>",
+      "categories": "list of <single line string>",
+      "geo?": {
+        lat: "<number>",
+        long: "<number>"
+      },
+      "contributors?": ["list of ", {
+        "first?": "<single line string>",
+        "last?": "<single line string>"
+      }]
+    })
   );
 
-  assert.equal(
-    describe(DETAILED.draft.label),
-    `{\n  hed?: <string>,\n  dek?: <string>,\n  body?: <string>\n}`
+  // prettier-ignore
+  assert.equal(describe(DETAILED.draft.label),
+    prettyPrint({
+      "hed?": "<string>",
+      "dek?": "<string>",
+      "body?": "<string>",
+      "author?": {
+        "first?": "<string>",
+        "last?": "<string>"
+      },
+      "issueDate?": "<ISO Date>",
+      "canonicalUrl?": "<string>",
+      "tags?": "list of <string>",
+      "categories?": "list of <string>",
+      "geo?": {
+        "lat?": "<number>",
+        "long?": "<number>"
+      },
+      "contributors?": ["list of ", {
+        "first?": "<string>",
+        "last?": "<string>"
+      }]
+    })
   );
 
   assert.equal(
     typescript(DETAILED.label),
-    `{\n  hed: string,\n  dek?: string,\n  body: string\n}`
+    // prettier-ignore
+    prettyPrint({
+      "hed": "string",
+      "dek?": "string",
+      "body": "string",
+      "author?": {
+        "first?": "string",
+        "last?": "string"
+      },
+      "issueDate?": "Date",
+      "canonicalUrl?": "string",
+      "tags?": "Array<string>",
+      "categories": "Array<string>",
+      "geo?": {
+        lat: "number",
+        long: "number"
+      },
+      "contributors?": ["Array<", {
+        "first?": "string",
+        "last?": "string"
+      }, ">"]
+    }, FORMAT_TS)
   );
 
   assert.equal(
     typescript(DETAILED.draft.label),
-    `{\n  hed?: string,\n  dek?: string,\n  body?: string\n}`
+    // prettier-ignore
+    prettyPrint({
+      "hed?": "string",
+      "dek?": "string",
+      "body?": "string",
+      "author?": {
+        "first?": "string",
+        "last?": "string"
+      },
+      "issueDate?": "Date",
+      "canonicalUrl?": "string",
+      "tags?": "Array<string>",
+      "categories?": "Array<string>",
+      "geo?": {
+        "lat?": "number",
+        "long?": "number"
+      },
+      "contributors?": ["Array<", {
+        "first?": "string",
+        "last?": "string"
+      }, ">"]
+    }, FORMAT_TS)
+  );
+
+  assert.equal(
+    schemaFormat(DETAILED.label),
+    // prettier-ignore
+    prettyPrint({
+      hed: "SingleLine().required()",
+      dek: "Text()",
+      body: "Text().required()",
+      author: ["Dictionary(", {
+        first: "SingleLine()",
+        last: "SingleLine()"
+      }, ")"],
+      issueDate: "Date()",
+      canonicalUrl: "Url()",
+      tags: "List(SingleLine())",
+      categories: "List(SingleLine())",
+      geo: ["Dictionary(", {
+        lat: "Num().required()",
+        long: "Num().required()"
+      }, ")"],
+      contributors: ["List(Dictionary(", {
+        first: "SingleLine()",
+        last: "SingleLine()"
+      }, "))"]
+    })
+  );
+
+  assert.equal(
+    schemaFormat(DETAILED.draft.label),
+    // prettier-ignore
+    prettyPrint({
+      hed: "Text()",
+      dek: "Text()",
+      body: "Text()",
+      author: ["Dictionary(", {
+        first: "Text()",
+        last: "Text()"
+      }, ")"],
+      issueDate: "Date()",
+      canonicalUrl: "Text()",
+      tags: "List(Text())",
+      categories: "List(Text())",
+      geo: ["Dictionary(", {
+        lat: "Num()",
+        long: "Num()"
+      }, ")"],
+      contributors: ["List(Dictionary(", {
+        first: "Text()",
+        last: "Text()"
+      }, "))"]
+    })
   );
 });
 
@@ -494,7 +675,8 @@ QUnit.module("Records");
 
 QUnit.test("optional records (geo)", async assert => {
   const RECORDS = new Schema("records", {
-    geo: Record({ lat: Num(), long: Num() })
+    geo: Record({ lat: Num(), long: Num() }),
+    author: Record({ first: SingleLine(), last: SingleLine() })
   });
 
   assert.deepEqual(
@@ -504,37 +686,21 @@ QUnit.test("optional records (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
-      hed: "A single line",
-      body: "Hello world\nMore content",
-      geo: {},
-      categories: ["single"]
+    await validatePublished(RECORDS, {
+      geo: {}
     }),
     [missingError("geo.lat"), missingError("geo.long")],
     "published documents must include nested required fields if dictionary is present"
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
-      hed: "A single line",
-      body: "Hello world\nMore content",
-      categories: ["single"]
-    }),
+    await validatePublished(RECORDS, {}),
     [],
     "published documents may leave out optional dictionaries"
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
-      hed: "A single line",
-      body: "Hello world\nMore content"
-    }),
-    [missingError("categories")],
-    "published documents may not leave out required dictionaries"
-  );
-
-  assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(RECORDS, {
       geo: { lat: "10", long: "20" }
     }),
     [typeError("number", "geo.lat"), typeError("number", "geo.long")],
@@ -542,7 +708,7 @@ QUnit.test("optional records (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(RECORDS, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: { lat: "10", long: "20" },
@@ -553,7 +719,7 @@ QUnit.test("optional records (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(RECORDS, {
       author: { first: "Christina\nTODO: Check", last: "Kung" }
     }),
     [],
@@ -561,11 +727,8 @@ QUnit.test("optional records (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
-      hed: "A single line",
-      author: { first: "Christina\nTODO: Check", last: "Kung" },
-      body: "Hello world\nMore content",
-      categories: ["single"]
+    await validatePublished(RECORDS, {
+      author: { first: "Christina\nTODO: Check", last: "Kung" }
     }),
     [typeError("string:single-line", "author.first")],
     "nested fields in published documents use the schema type (multiline strings are not valid single-line strings)"
@@ -580,51 +743,33 @@ QUnit.test("required records (geo)", async assert => {
   assert.deepEqual(
     await validateDraft(RECORDS, {}),
     [],
-    "drafts do not need optional records"
+    "drafts do not need required records"
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
-      hed: "A single line",
-      body: "Hello world\nMore content",
-      categories: ["single"]
-    }),
-    [missingError("geo")],
-    "published documents must include nested required fields if dictionary is present"
-  );
-
-  assert.deepEqual(
-    await validatePublished(DETAILED, {
-      hed: "A single line",
-      body: "Hello world\nMore content",
-      geo: {},
-      categories: ["single"]
+    await validatePublished(RECORDS, {
+      geo: {}
     }),
     [missingError("geo.lat"), missingError("geo.long")],
-    "published documents must include nested required fields if dictionary is present"
+    "drafts must include nested required fields if record is present"
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
-      hed: "A single line",
-      body: "Hello world\nMore content",
-      categories: ["single"]
+    await validatePublished(RECORDS, {}),
+    [missingError("geo")],
+    "published documents must include required records"
+  );
+
+  assert.deepEqual(
+    await validatePublished(RECORDS, {
+      geo: {}
     }),
-    [],
-    "published documents may leave out optional dictionaries"
+    [missingError("geo.lat"), missingError("geo.long")],
+    "published documents must include nested required fields if record is present"
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
-      hed: "A single line",
-      body: "Hello world\nMore content"
-    }),
-    [missingError("categories")],
-    "published documents may not leave out required dictionaries"
-  );
-
-  assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(RECORDS, {
       geo: { lat: "10", long: "20" }
     }),
     [typeError("number", "geo.lat"), typeError("number", "geo.long")],
@@ -632,18 +777,19 @@ QUnit.test("required records (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
-      hed: "A single line",
-      body: "Hello world\nMore content",
-      geo: { lat: "10", long: "20" },
-      categories: ["single"]
+    await validatePublished(RECORDS, {
+      geo: { lat: "10", long: "20" }
     }),
     [typeError("number", "geo.lat"), typeError("number", "geo.long")],
     "nested fields in published documents use the schema type (but numbers aren't strings)"
   );
 
+  const STRING_RECORDS = new Schema("string-records", {
+    author: Record({ first: SingleLine(), last: SingleLine() }).required()
+  });
+
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(STRING_RECORDS, {
       author: { first: "Christina\nTODO: Check", last: "Kung" }
     }),
     [],
@@ -651,13 +797,165 @@ QUnit.test("required records (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
-      hed: "A single line",
-      author: { first: "Christina\nTODO: Check", last: "Kung" },
-      body: "Hello world\nMore content",
-      categories: ["single"]
+    await validatePublished(STRING_RECORDS, {
+      author: { first: "Christina\nTODO: Check", last: "Kung" }
     }),
     [typeError("string:single-line", "author.first")],
     "nested fields in published documents use the schema type (multiline strings are not valid single-line strings)"
   );
 });
+
+QUnit.test("labels", assert => {
+  const RECORDS = new Schema("records", {
+    geo: Record({ lat: Num(), long: Num() }),
+    author: Record({ first: SingleLine(), last: SingleLine() }).required(),
+    date: ISODate()
+  });
+
+  assert.equal(
+    describe(RECORDS.label),
+
+    // prettier-ignore
+    prettyPrint({
+      "geo?": {
+        lat: "<number>",
+        long: "<number>"
+      },
+      "author": {
+        first: "<single line string>",
+        last: "<single line string>"
+      },
+      "date?": "<ISO Date>"
+    })
+  );
+
+  assert.equal(
+    describe(RECORDS.draft.label),
+
+    // prettier-ignore
+    prettyPrint({
+      "geo?": {
+        "lat?": "<number>",
+        "long?": "<number>"
+      },
+      "author?": {
+        "first?": "<string>",
+        "last?": "<string>"
+      },
+      "date?": "<ISO Date>"
+    })
+  );
+
+  assert.equal(
+    typescript(RECORDS.label),
+
+    // prettier-ignore
+    prettyPrint({
+      "geo?": {
+        lat: "number",
+        long: "number"
+      },
+      "author": {
+        first: "string",
+        last: "string"
+      },
+      "date?": "Date"
+    }, FORMAT_TS)
+  );
+
+  assert.equal(
+    typescript(RECORDS.draft.label),
+    prettyPrint(
+      {
+        "geo?": {
+          "lat?": "number",
+          "long?": "number"
+        },
+        "author?": {
+          "first?": "string",
+          "last?": "string"
+        },
+        "date?": "Date"
+      },
+      FORMAT_TS
+    )
+  );
+
+  assert.equal(
+    schemaFormat(RECORDS.label),
+
+    // prettier-ignore
+    prettyPrint({
+      geo: ["Dictionary(", {
+        lat: "Num().required()",
+        long: "Num().required()"
+      }, ")"],
+      author: ["Dictionary(", {
+        first: "SingleLine().required()",
+        last: "SingleLine().required()"
+      }, ").required()"],
+      date: "Date()"
+    })
+  );
+
+  assert.equal(
+    schemaFormat(RECORDS.draft.label),
+
+    // prettier-ignore
+    prettyPrint({
+      geo: ["Dictionary(", {
+        lat: "Num()",
+        long: "Num()"
+      }, ")"],
+      author: ["Dictionary(", {
+        first: "Text()",
+        last: "Text()"
+      }, ")"],
+      date: "Date()"
+    })
+  );
+});
+
+type Value = string | ValueDict | ValueArray;
+interface ValueDict extends Dict<Value> {}
+interface ValueArray extends Array<Value> {}
+
+export interface PrettyPrintOptions {
+  sep?: string;
+  sepOnLast?: boolean;
+  pad?: number;
+}
+
+const FORMAT_TS: PrettyPrintOptions = { sep: ";", sepOnLast: true };
+
+function prettyPrint(
+  value: Value,
+  { sep = ",", sepOnLast = false, pad = 2 }: PrettyPrintOptions = {}
+): string {
+  if (typeof value === "string") {
+    return value;
+  } else if (Array.isArray(value)) {
+    let out = value.map(v => prettyPrint(v, { sep, sepOnLast, pad }));
+    return out.join("");
+  } else {
+    let out = "{\n";
+
+    let keys = Object.keys(value);
+    let last = keys.length - 1;
+
+    keys.forEach((key, i) => {
+      out += `${" ".repeat(pad)}${key}: `;
+      out += prettyPrint(value[key]!, { sep, sepOnLast, pad: pad + 2 });
+
+      if (last !== i || sepOnLast) {
+        out += sep;
+      }
+
+      out += "\n";
+    });
+
+    out += `${" ".repeat(pad - 2)}}`;
+
+    return out;
+  }
+}

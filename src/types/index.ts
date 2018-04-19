@@ -14,4 +14,4 @@ export {
   primitiveLabel
 } from "./type";
 export { Interface } from "./utils";
-export { describe, typescript } from "./describe";
+export { describe, typescript, schemaFormat } from "./describe";

@@ -4,11 +4,13 @@ import { Label, Optionality, TypeLabel } from "./label";
 import { Interface, maybe } from "./utils";
 
 export function primitiveLabel(
+  { name, args = [] }: { name: string; args?: string[] },
   description: string,
   typescript: string
 ): TypeLabel {
   return {
     kind: "primitive",
+    schemaType: { name, args },
     description,
     typescript
   };
@@ -161,8 +163,8 @@ export type TypeFunction = () => Interface<OptionalType>;
 
 export function derived(
   type: Primitive,
-  base: Primitive
+  base: Interface<OptionalType>
 ): () => Interface<OptionalType> {
-  let optional = OptionalType.derived(type, base);
+  let optional = OptionalType.derived(type, base.asType().type);
   return () => optional;
 }

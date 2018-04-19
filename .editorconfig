@@ -4,7 +4,7 @@ end_of_line = lf
 
 [*.ts]
 
-indent_style = space
+indent_style = spac e
 tab_width = 2
 
 [*.md]

@@ -1,10 +1,11 @@
-import { ValidationBuilder, validators } from "@cross-check/dsl";
+import { ValidationBuilder } from "@cross-check/dsl";
 import {
   Interface,
   OptionalType,
   derived,
   primitiveLabel,
-  toPrimitive
+  toPrimitive,
+  types
 } from "copilot-schema";
 import { unknown } from "ts-std";
 import { format } from "./format";
@@ -48,11 +49,10 @@ export function url(...args: UrlType[]): ValidationBuilder<unknown> {
 
 export function Url(...args: UrlType[]): Interface<OptionalType> {
   let validator = url(...args);
-  let urlPrimitive = toPrimitive(validator, primitiveLabel("url", "string"));
-  let stringPrimitive = toPrimitive(
-    validators.isString(),
-    primitiveLabel("string", "string")
+  let urlPrimitive = toPrimitive(
+    validator,
+    primitiveLabel({ name: "Url", args }, "url", "string")
   );
 
-  return derived(urlPrimitive, stringPrimitive)();
+  return derived(urlPrimitive, types.Text())();
 }

@@ -11,7 +11,8 @@ export {
   toPrimitive,
   primitiveLabel,
   describe,
-  typescript
+  typescript,
+  schemaFormat
 } from "./types";
 import * as types from "./types";
 export { types };

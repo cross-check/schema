@@ -8,6 +8,16 @@ import {
   toPrimitive
 } from "./type";
 
+export const Text: TypeFunction = primitive(
+  validators.isString(),
+  primitiveLabel({ name: "Text" }, "string", "string")
+);
+
+export const Num: TypeFunction = primitive(
+  validators.isNumber(),
+  primitiveLabel({ name: "Num" }, "number", "number")
+);
+
 const isSingleLine = validators.is(
   (value: string): value is string => !/\n/.test(value),
   "string:single-line"
@@ -16,9 +26,9 @@ const isSingleLine = validators.is(
 export const SingleLine: TypeFunction = derived(
   toPrimitive(
     validators.isString().andThen(isSingleLine()),
-    primitiveLabel("single line string", "string")
+    primitiveLabel({ name: "SingleLine" }, "single line string", "string")
   ),
-  toPrimitive(validators.isString(), primitiveLabel("string", "string"))
+  Text()
 );
 
 class AnyValidator extends ValueValidator<unknown, void> {
@@ -29,13 +39,5 @@ class AnyValidator extends ValueValidator<unknown, void> {
 
 export const Any: TypeFunction = primitive(
   builderFor(AnyValidator)(),
-  primitiveLabel("any", "unknown")
-);
-export const Text: TypeFunction = primitive(
-  validators.isString(),
-  primitiveLabel("string", "string")
-);
-export const Num: TypeFunction = primitive(
-  validators.isNumber(),
-  primitiveLabel("number", "number")
+  primitiveLabel({ name: "Any" }, "any", "unknown")
 );
