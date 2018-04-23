@@ -2,18 +2,18 @@
 # yarn lockfile v1
 
 
-"@cross-check/core@^0.7.4":
-  version "0.7.4"
-  resolved "https://registry.yarnpkg.com/@cross-check/core/-/core-0.7.4.tgz#4edd1d47d34af45046578dda559d47c4c1c77349"
+"@cross-check/core@^0.8.0":
+  version "0.8.3"
+  resolved "https://registry.yarnpkg.com/@cross-check/core/-/core-0.8.3.tgz#23fcb29f57d95906fe077919ebdf994e50c281ee"
   dependencies:
     no-show "^0.6.2"
     ts-std "^0.6.2"
 
-"@cross-check/dsl@^0.7.8":
-  version "0.7.8"
-  resolved "https://registry.yarnpkg.com/@cross-check/dsl/-/dsl-0.7.8.tgz#e671e92ccbc9e37f434879fa7fceedb428b53742"
+"@cross-check/dsl@^0.8.0":
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/@cross-check/dsl/-/dsl-0.8.0.tgz#9bda0e8b0fe751b2405569d0e6a3e186da3f150e"
   dependencies:
-    "@cross-check/core" "^0.7.4"
+    "@cross-check/core" "^0.8.0"
     no-show "^0.6.2"
     ts-std "^0.6.2"
 
