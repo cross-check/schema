@@ -38,13 +38,15 @@ export const SingleLine: TypeFunction = derived(
 
 export const SingleWord: TypeFunction = derived(
   toPrimitive(
-    validators.isString().andThen(isSingleLine()),
+    validators.isString().andThen(isSingleWord()),
     primitiveLabel({ name: "Single Word" }, "single word string", "string")
   ),
   Text()
 );
 
 class AnyValidator extends ValueValidator<unknown, void> {
+  static validatorName = "any";
+
   validate(_value: unknown, _context: Option<string>): void {
     return;
   }
