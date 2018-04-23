@@ -8,6 +8,8 @@ import {
 import { unknown } from "ts-std";
 
 export class FormatValidator extends ValueValidator<string, RegExp> {
+  static validatorName = "format";
+
   validate(value: string): ErrorMessage | void {
     if (this.options.test(value)) {
       return;

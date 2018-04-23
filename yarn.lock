@@ -10,8 +10,8 @@
     ts-std "^0.6.2"
 
 "@cross-check/dsl@^0.8.0":
-  version "0.8.0"
-  resolved "https://registry.yarnpkg.com/@cross-check/dsl/-/dsl-0.8.0.tgz#9bda0e8b0fe751b2405569d0e6a3e186da3f150e"
+  version "0.8.1"
+  resolved "https://registry.yarnpkg.com/@cross-check/dsl/-/dsl-0.8.1.tgz#6af8c7f78c43acbba816900b9888a4b21d87eee4"
   dependencies:
     "@cross-check/core" "^0.8.0"
     no-show "^0.6.2"
