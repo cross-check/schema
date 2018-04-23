@@ -1,7 +1,7 @@
 {
-  "name": "copilot-schema",
+  "name": "@cross-check/schema",
   "version": "0.5.0",
-  "description": "A brand new TypeScript library.",
+  "description": "A library for schema validations",
   "main": "dist/commonjs/src/index.js",
   "module": "dist/modules/src/index.js",
   "types": "dist/types/src/index.d.ts",

@@ -143,7 +143,86 @@ This `Person` schema requires a first and last name, but makes the middle name o
 
 # Lists
 
+You can also say that a field contains a list of items of a particular type.
+
+```ts
+import { Schema, type } from "@cross-check/schema";
+
+const Article = new Schema({
+  headline: type.SingleLine(),
+  body: type.Text(),
+  tags: type.List(type.SingleWord())
+});
+```
+
+This Article schema has an optional headline and body, and an optional list of single words.
+
+```ts
+> Article.validate({ tags: "sometag" })
+[{
+  message: { key: "type", args: "array" },
+  path: ["tags"]
+}]
+
+> Article.validate({ tags: [12, 15] })
+[{
+  message: { key: "type", args: "string" },
+  path: ["tags", "0"]
+}, {
+  message: { key: "type", args: "string" },
+  path: ["tags", "1"]
+}]
+
+> Article.validate({ tags: ["whoops too many words", "totes-fine"] })
+[{
+  message: { key: "type", args: "string:single-word" },
+  path: ["tags", "0"]
+}]
+
+> Article.draft.validate({ tags: [12, 15] })
+[{
+  message: { key: "type", args: "string" },
+  path: ["tags", "0"]
+}, {
+  message: { key: "type", args: "string" },
+  path: ["tags", "1"]
+}] // Even in draft mode, a number is not a string
+
+> Article.validate({ tags: ["too many words", "totes-fine"] })
+[] // but in draft mode, weird strings are ok
+```
+
+A list can contain other lists, dictionaries, or any other type.
+
 # Dictionaries
+
+A field can also contain a dictionary.
+
+```ts
+import { Schema, type } from "@cross-check/schema";
+
+const Location = new Schema({
+  geo: type.Dictionary({
+    lat: type.Num().required(),
+    long: type.Num().required()
+  })
+})
+```
+
+This location schema has a single `geo` field that contains a dictionary with two fields: a lat, which is a number, and a long, which is also a number. We have marked the `lat` and `long` as required, which means that if the dictionary is present, it must contain both a `lat` and `long`.
+
+Since the dictionary itself is optional, you can leave off the dictionary itself.
+
+```ts
+> Location.validate({});
+[] // geo is optional
+
+> Location.validate({ geo: { lat: 12 } })
+[{
+  message: { key: "type", args: "present" },
+  path: ["geo", "long"]
+}]
+```
 
 # Custom Types
 

@@ -23,10 +23,23 @@ const isSingleLine = validators.is(
   "string:single-line"
 );
 
+const isSingleWord = validators.is(
+  (value: string): value is string => !/\s/.test(value),
+  "string:single-word"
+);
+
 export const SingleLine: TypeFunction = derived(
   toPrimitive(
     validators.isString().andThen(isSingleLine()),
     primitiveLabel({ name: "SingleLine" }, "single line string", "string")
+  ),
+  Text()
+);
+
+export const SingleWord: TypeFunction = derived(
+  toPrimitive(
+    validators.isString().andThen(isSingleLine()),
+    primitiveLabel({ name: "Single Word" }, "single word string", "string")
   ),
   Text()
 );
