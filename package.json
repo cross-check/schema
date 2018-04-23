@@ -1,6 +1,6 @@
 {
   "name": "@cross-check/schema",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A library for schema validations",
   "main": "dist/commonjs/src/index.js",
   "module": "dist/modules/src/index.js",
@@ -8,7 +8,9 @@
   "ember-addon": {
     "main": "ember-addon.js"
   },
-  "keywords": ["ember-addon"],
+  "keywords": [
+    "ember-addon"
+  ],
   "scripts": {
     "problems": "node ./scripts/problems.js",
     "preversion": "npm run test",
