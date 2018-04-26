@@ -35,7 +35,7 @@ export default class Schema {
     let schema = dict<Primitive>();
 
     for (let [key, value] of entries(this.obj)) {
-      schema[key] = value!.asType().type;
+      schema[key] = value!.asType().primitiveType;
     }
 
     return new ValidatableSchema(schema, this.name);
@@ -60,7 +60,7 @@ export class ValidatableSchema {
   }
 
   validate(obj: Dict<unknown>, env: Environment): Task<ValidationError[]> {
-    return validate(env, obj, this.validation(), null);
+    return validate(obj, this.validation(), null, env);
   }
 
   validation(): ValidationDescriptor {

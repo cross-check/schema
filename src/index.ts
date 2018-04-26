@@ -7,9 +7,9 @@ export {
   TypeFunction,
   OptionalType,
   primitive,
-  derived,
+  type,
   toPrimitive,
-  primitiveLabel,
+  label,
   describe,
   typescript,
   schemaFormat

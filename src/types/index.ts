@@ -1,4 +1,4 @@
-export { SingleLine, Text, Any, Num } from "./primitives";
+export * from "./primitives";
 
 // Note: This is called List to avoid conflicting with the builtin Array
 export { List } from "./array";
@@ -10,8 +10,8 @@ export {
   OptionalType,
   toPrimitive,
   primitive,
-  derived,
-  primitiveLabel
+  type,
+  label
 } from "./type";
 export { Interface } from "./utils";
 export { describe, typescript, schemaFormat } from "./describe";

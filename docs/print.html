@@ -1,0 +1,495 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>CrossCheck</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <base href="">
+
+        <link rel="stylesheet" href="book.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="_FontAwesome/css/font-awesome.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+
+    </head>
+    <body class="light">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            if (theme === null || theme === undefined) { theme = 'light'; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <ol class="chapter"><li><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="schemas.html"><strong aria-hidden="true">2.</strong> Schema</a></li><li><a href="validations.html"><strong aria-hidden="true">3.</strong> Validations</a></li><li><a href="types.html"><strong aria-hidden="true">4.</strong> Custom Types</a></li><li><a href="formatters.html"><strong aria-hidden="true">5.</strong> Formatters</a></li><li><a href="philosophy.html"><strong aria-hidden="true">6.</strong> Philosophy</a></li></ol>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light <span class="default">(default)</span></button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">CrossCheck</h1> 
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <a class="header" href="print.html#introduction" id="introduction"><h1>Introduction</h1></a>
+<p>CrossCheck is a highly composable and ergonomic validation library.</p>
+<p>It was extracted from Conde Nast CMS system, which supports more than 100 brands with similar, but not always identical validation requirements. This environment gives rise to significant extensibility requirements, so CrossCheck's primitives are designed with extensibility in mind.</p>
+<p>All CrossCheck primitives produce well-typed, well-defined JSON objects. This is intended to allow applications to store schemas in a database or build UIs to generate them.</p>
+<a class="header" href="print.html#extensibility-first" id="extensibility-first"><h2>Extensibility First</h2></a>
+<p>CrossCheck schemas can be <strong>extended</strong>. You can create a single base type that can be customized for different uses or by different brands in a larger organization.</p>
+<p>CrossCheck schemas can be <strong>evolved</strong> without big-bang data migrations. Instead, data created under v1 of a schema can be viewed through the lens of v2 of the same schema. Schema evolution is baked into CrossCheck from the ground up.</p>
+<p>CrossCheck schemas are <strong>resilient</strong> to old, invalid data or improperly imported data. Define fix-up rules for invalid data and CrossCheck can clean up broken data on the fly. No need to run migrations against all your old data or force every API client to harden itself against the possibility of broken data.</p>
+<a class="header" href="print.html#important-schema-features" id="important-schema-features"><h2>Important Schema Features</h2></a>
+<ul>
+<li><strong>Draft Mode</strong>: Defining a schema automatically generates a &quot;draft schema&quot;, to make it easier to save in-progress work that doesn't yet satisfy the strict schema requirements.</li>
+<li><strong>Rich Types</strong>: Any concept that you can write a validation function for can be used as a schema type: URL, single word string, Date formatted as 8601, etc.</li>
+<li><strong>Composable Types</strong>: Put types inside of lists or dictionaries, and get errors when the constituent parts are invalid.</li>
+<li><strong>Custom Types</strong>: Turn any CrossCheck validator into a CrossCheck schema type.</li>
+<li><strong>TypeScript Support</strong>: Turn any CrossCheck schema into a TypeScript interface.</li>
+<li><strong>Pretty Printing</strong>: Use the CrossCheck formatter API to turn your schema into the format expected by another library. Need to generate MobX classes? Want to generate GraphQL schemas? No problem!</li>
+</ul>
+<a class="header" href="print.html#important-validator-features" id="important-validator-features"><h2>Important Validator Features</h2></a>
+<ul>
+<li><strong>Value-based</strong>: Validate values, not just objects (&quot;validate that this value is a titlecase string&quot;)</li>
+<li><strong>Async</strong>: Validators can be async (&quot;validate that this is a unique email address&quot;)</li>
+<li><strong>No exceptions</strong>: Validators produce an error list and don't throw exceptions</li>
+<li><strong>Easy to Localize</strong>: Validation errors are structured data, not an English string (so errors can be easily localized)</li>
+<li><strong>Composable</strong>: Validators can be pipelined: &quot;this type should not be null, and then it should be a string, and then it should be a valid email&quot;. Sub-validators can be reused, making it easier to build up larger validations and ensuring that errors have a consistent structure.</li>
+<li><strong>Framework Friendly</strong>: Validation rules are agnostic to how properties are looked up inside of object (so they naturally support Immutable.js or other APIs that look up properties using <code>.get</code> or similar)</li>
+<li><strong>Pretty Printing</strong>: CrossCheck can pretty-print validators for documentation and debugging</li>
+<li>A single validator can produce multiple errors</li>
+</ul>
+<a class="header" href="print.html#schema" id="schema"><h1>Schema</h1></a>
+<p>Crosscheck Schemas allow you to define a schema for your data and use the schema to validate the data.</p>
+<p>Uniquely, it allows you to differentiate between &quot;draft&quot; data and published data without creating two separate schema definitions.</p>
+<p>For example, if a field in your schema has the &quot;URL&quot; type, you can allow that field to hold any string while the record is being drafted.</p>
+<p>This reduces friction when saving initial drafts of content types. It also makes it easy to implement &quot;auto-save&quot;, which is optimized for saving in-progress data.</p>
+<a class="header" href="print.html#basic-usage" id="basic-usage"><h1>Basic Usage</h1></a>
+<p>First, let's define a schema.</p>
+<pre><code class="language-ts">import { Schema, type } from &quot;@cross-check/schema&quot;;
+
+const schema = new Schema({
+  // SingleLine is a string that contains no newlines.
+  // Required means that the field must not be missing
+  title: type.SingleLine().required(),
+  subtitle: type.SingleLine(),
+
+  // Text is a string that can contain newlines
+  body: type.Text().required(),
+
+  // SingleWord is a string with no whitespace at all
+  tags: type.List(type.SingleWord()),
+
+  geo: Dictionary({
+    lat: type.Number().required(),
+    long: type.Number().required()
+  })
+});
+</code></pre>
+<p>Now, let's try to validate some content:</p>
+<pre><code class="language-ts">&gt; schema.validate({});
+[{
+  message: { key: &quot;type&quot;, args: &quot;present&quot; },
+  path: [&quot;title&quot;]
+}, {
+  message: { key: &quot;type&quot;, args: &quot;present&quot; },
+  path: [&quot;body&quot;]
+}]
+</code></pre>
+<p>The first thing to notice here is that Crosscheck returns a list of errors, rather than raising an exception. This allows you to use these errors in an interactive UI, and provide richer error information over web services.</p>
+<p>Additionally, Crosscheck errors are returned as data: a kind of error and the arguments to the validation. This allows you to present the errors in using application-appropriate language, as well as properly internationalize error messages.</p>
+<p>Under the hood, Crosscheck Schema uses the advanced <code>@cross-check/core</code> validation library to validate objects, a validation library extracted from the real-world requirements of the Conde Nast CMS. Its compositional, asynchronous core makes it a perfect fit for validating schemas with embedded lists and dictionaries. To learn more about the philosophy and mechanics of Crosscheck Validations, check out its <a href="https://github.com/cross-check/core/blob/master/README.md">README</a>.</p>
+<a class="header" href="print.html#drafts" id="drafts"><h2>Drafts</h2></a>
+<p>The schema we wrote is pretty strict. It absolutely requires a title and body. But when we're drafting an article, we don't want to be bothered with this kind of busywork just to save in-progress content. And worse, how could we implement auto-save for our form if our authors need to fix a bunch of validation errors before they can even get off the ground.</p>
+<p>To solve this problem, every schema creates a looser &quot;draft&quot; schema at the same time.</p>
+<pre><code class="language-ts">&gt; schema.draft.validate({});
+[]
+</code></pre>
+<p>Because we're validating the draft version of the schema, a completely empty document is totally fine.</p>
+<p>But not any kind of document will validate in the draft schema.</p>
+<pre><code class="language-ts">&gt; schema.draft.validate({ title: 12, geo: { lat: &quot;100&quot;, long: &quot;50&quot; } });
+[{
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;title&quot;]
+}, {
+  message: { key: &quot;type&quot;, args: &quot;number&quot; },
+  path: [&quot;geo&quot;, &quot;lat&quot;]
+}, {
+  message: { key: &quot;type&quot;, args: &quot;number&quot; },
+  path: [&quot;geo&quot;, &quot;long&quot;]
+}]
+</code></pre>
+<p>Even though we are generally loose with the kind of document we're willing to accept as a draft, we're still expected to pass the right basic data types if we send anything at all.</p>
+<p>The philosophy of drafts comes from two observations:</p>
+<ul>
+<li>We want to allow clients to send in-progress data that the user hasn't finished filling out, but the user is not responsible for picking the data type. For example, if a field is supposed to be a number, the client should user an appropriate number field, and pass a number back to the server.</li>
+<li>Servers need to store data in data stores (like relational databases) that apply some structure to the data. As a result, even when clients send drafts to the server, we want to be able to impose some constraints on the form of the data.</li>
+</ul>
+<p>To give a concrete example, consider a <code>Url</code> type that requires that its data is a valid URL. That type allows any string at all to be provided when used in draft mode. This satisfies the &quot;auto-save&quot; heuristic: the end user can type any text into the text box provided by the CMS, and we want to be able to save a draft even during this period.</p>
+<a class="header" href="print.html#required-and-optional-fields" id="required-and-optional-fields"><h1>Required and Optional Fields</h1></a>
+<p>As the above example illustrated, you can mark any field as required. If a field is not marked as required, it is optional.</p>
+<pre><code class="language-ts">import { Schema, type } from &quot;@cross-check/schema&quot;;
+
+const Person = new Schema({
+  first: type.SingleLine().required(),
+  middle: type.SingleLine(),
+  last: type.SingleLine().required()
+});
+</code></pre>
+<p>This <code>Person</code> schema requires a first and last name, but makes the middle name optional.</p>
+<pre><code class="language-ts">&gt; Person.validate({})
+[{
+  message: { key: &quot;first&quot;, args: &quot;present&quot; },
+  path: [&quot;title&quot;]
+}, {
+  message: { key: &quot;last&quot;, args: &quot;present&quot; },
+  path: [&quot;body&quot;]
+}]
+
+&gt; Person.draft.validate({})
+[]
+
+&gt; Person.validate({ first: &quot;Christina&quot;, last: &quot;Kung&quot; })
+[]
+
+&gt; Person.validate({ first: &quot;Christina&quot;, middle: &quot;multi\nline&quot;, last: &quot;Kung&quot; })
+[{
+  message: { key: &quot;type&quot;, args: &quot;string:single-line&quot; },
+  path: [&quot;middle&quot;]
+}]
+
+&gt; Person.draft.validate({ first: &quot;Christina&quot;, middle: &quot;multi\nline&quot;, last: &quot;Kung&quot; })
+[] // the draft version of a single-line string is any string
+
+&gt; Person.draft.validate({ first: &quot;Christina&quot;, middle: 12, last: &quot;Kung&quot; })
+[{
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;middle&quot;]
+}] // but you still can't pass a number
+</code></pre>
+<a class="header" href="print.html#lists" id="lists"><h1>Lists</h1></a>
+<p>You can also say that a field contains a list of items of a particular type.</p>
+<pre><code class="language-ts">import { Schema, type } from &quot;@cross-check/schema&quot;;
+
+const Article = new Schema({
+  headline: type.SingleLine(),
+  body: type.Text(),
+  tags: type.List(type.SingleWord())
+});
+</code></pre>
+<p>This Article schema has an optional headline and body, and an optional list of single words.</p>
+<pre><code class="language-ts">&gt; Article.validate({ tags: &quot;sometag&quot; })
+[{
+  message: { key: &quot;type&quot;, args: &quot;array&quot; },
+  path: [&quot;tags&quot;]
+}]
+
+&gt; Article.validate({ tags: [12, 15] })
+[{
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;tags&quot;, &quot;0&quot;]
+}, {
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;tags&quot;, &quot;1&quot;]
+}]
+
+&gt; Article.validate({ tags: [&quot;whoops too many words&quot;, &quot;totes-fine&quot;] })
+[{
+  message: { key: &quot;type&quot;, args: &quot;string:single-word&quot; },
+  path: [&quot;tags&quot;, &quot;0&quot;]
+}]
+
+&gt; Article.draft.validate({ tags: [12, 15] })
+[{
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;tags&quot;, &quot;0&quot;]
+}, {
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;tags&quot;, &quot;1&quot;]
+}] // Even in draft mode, a number is not a string
+
+&gt; Article.validate({ tags: [&quot;too many words&quot;, &quot;totes-fine&quot;] })
+[] // but in draft mode, weird strings are ok
+</code></pre>
+<p>A list can contain other lists, dictionaries, or any other type.</p>
+<a class="header" href="print.html#dictionaries" id="dictionaries"><h1>Dictionaries</h1></a>
+<p>A field can also contain a dictionary.</p>
+<pre><code class="language-ts">import { Schema, type } from &quot;@cross-check/schema&quot;;
+
+const Location = new Schema({
+  geo: type.Dictionary({
+    lat: type.Number().required(),
+    long: type.Number().required()
+  })
+})
+</code></pre>
+<p>This location schema has a single <code>geo</code> field that contains a dictionary with two fields: a lat, which is a number, and a long, which is also a number. We have marked the <code>lat</code> and <code>long</code> as required, which means that if the dictionary is present, it must contain both a <code>lat</code> and <code>long</code>.</p>
+<p>Since the dictionary itself is optional, you can leave off the dictionary itself.</p>
+<pre><code class="language-ts">&gt; Location.validate({});
+[] // geo is optional
+
+&gt; Location.validate({ geo: { lat: 12 } })
+[{
+  message: { key: &quot;type&quot;, args: &quot;present&quot; },
+  path: [&quot;geo&quot;, &quot;long&quot;]
+}]
+</code></pre>
+<a class="header" href="print.html#custom-types" id="custom-types"><h1>Custom Types</h1></a>
+<a class="header" href="print.html#formatters" id="formatters"><h1>Formatters</h1></a>
+<a class="header" href="print.html#validations" id="validations"><h1>Validations</h1></a>
+<a class="header" href="print.html#custom-types-1" id="custom-types-1"><h1>Custom Types</h1></a>
+<p>A custom </p>
+<a class="header" href="print.html#formatters-1" id="formatters-1"><h1>Formatters</h1></a>
+<a class="header" href="print.html#philosophy" id="philosophy"><h1>Philosophy</h1></a>
+<p>CrossCheck's primary goal is to create a highly composable and ergonomic validation system.</p>
+<a class="header" href="print.html#high-level-architecture" id="high-level-architecture"><h2>High Level Architecture</h2></a>
+<p>The data structures and core functions are found in <code>@cross-check/core</code> to create a small, well-defined composition boundary. The primary data structure in <code>@cross-check/core</code> is <code>ValidationDescriptor</code>.</p>
+<p>Higher level tools for building up validations are found in <code>@cross-check/dsl</code>. Validators written against the interfaces in <code>@cross-check/core</code> will compose reliably with validators created using the higher level abstractions (including the object oriented abstractions).</p>
+<p>Finally, while <code>@cross-check/core</code> and <code>@cross-check/dsl</code> validate values, <code>@cross-check/schema</code> validates entire records against a schema, with facilities optimized for that use case. The <code>@cross-check/schema</code> library also creates <code>ValidationDescriptor</code>, and the errors produced when validating a schema are the same <code>ValidationError</code>s in <code>@cross-check/core</code>.</p>
+<a class="header" href="print.html#typescript-hardened" id="typescript-hardened"><h2>TypeScript Hardened</h2></a>
+<p>CrossCheck defines a handful of core, composable interfaces that are defined rigorously in TypeScript. Convenience abstractions are layered on top, sharing a stable core primitive.</p>
+<pre><code class="language-ts">// A validation descriptor is an instance of a validator including a descriptive
+// name and its options
+interface ValidationDescriptor&lt;T, Options&gt; {
+  name: string;
+  validator(options: Options): Validator&lt;T&gt;;
+  options: Options;
+}
+
+// A validator is a function that takes a value and produces (asynchronously)
+// a list of validation errors.
+type Validator&lt;T&gt; = (value: T) =&gt; Promise&lt;ValidationError[]&gt;;
+
+// A validation error is a path to error and an error message, which contains
+// the name of the error and additional details provided by the validator.
+interface ValidationError {
+  path: string[];
+  message: {
+    name: string;
+    details: unknown;
+  }
+}
+</code></pre>
+<a class="header" href="print.html#composition-at-the-core" id="composition-at-the-core"><h2>Composition at the Core</h2></a>
+<p>The CrossCheck core data structure is called <code>ValidationDescriptor</code>, and its goal is to provide a highly composable but relatively unopinionated primitive for building composed validators.</p>
+<a class="header" href="print.html#validate-values" id="validate-values"><h3>Validate Values</h3></a>
+<p>At the core, CrossCheck validates individual values, not a bunch of fields on an object.</p>
+<p>This makes it possible to validate that a single string matches a particular format, or that a number is greater than some lower bound.</p>
+<p>To validate an object, CrossCheck validates the object as a &quot;value&quot; and uses composition to validate its constituent parts. Several design decisions of the core data structure make such composition possible:</p>
+<ul>
+<li>A single validator can return <strong>any number of errors</strong>. This makes it possible for a single validator to run sub-validators on sub-parts of the object in question.</li>
+<li>Validation errors <strong>include a path</strong> member, which provides the path to the place where the error occurred. Validations that validate sub-properties, like the object or array validator, prepend the path that they plucked off. This also allows arbitrary nesting: each validator that plucks off a sub-part of an object prepends the path it added.</li>
+</ul>
+<p>These design decisions also make array validations relatively consistent: an array validator runs the same sub-validator on every element of the array, and produces an error whose path is the index into the array.</p>
+<p>This makes validating an array of objects containing members that are <strong>themselves arrays of objects</strong> a standard composition in CrossCheck.</p>
+<p><strong>There is no distinction between a &quot;single value&quot; and an object or array.</strong> A value is a value is a value. Composition takes care of the rest.</p>
+<a class="header" href="print.html#no-exceptions-and-no-mutation" id="no-exceptions-and-no-mutation"><h3>No Exceptions and No Mutation</h3></a>
+<p>CrossCheck validations are functional, not effectful.</p>
+<p>CrossCheck never mutates the underlying objects in order to validate them or report errors. It also does not throw exceptions in order to report validation errors like many schema validation libraries.</p>
+<p>The CrossCheck validation process <strong>reads data</strong> from objects and produces an array of error messages.</p>
+<a class="header" href="print.html#localization-agnostic-but-formatting-friendly" id="localization-agnostic-but-formatting-friendly"><h3>Localization Agnostic, But Formatting Friendly</h3></a>
+<p>Validation libraries usually make formatting a responsibility of individual validators.</p>
+<p>This forces a hard choice between bad options:</p>
+<ul>
+<li>provide no localization solution at all</li>
+<li>hardcode support for a specific localization library</li>
+<li>force people to write new implementations of the validations for each localization solution they want to use</li>
+</ul>
+<p>The CrossCheck validation function produces a data structure containing enough information to create localized, formatted error messages, rather than making formatting an additional responsibility of validators.</p>
+<pre><code class="language-json">[{
+  &quot;path&quot;: [&quot;lat&quot;],
+  &quot;message&quot;: {
+    &quot;key&quot;: &quot;gt&quot;,
+    &quot;args&quot;: { &quot;expected&quot;: 0, &quot;actual&quot;: -50 }
+  }
+}]
+</code></pre>
+<p>Validators themselves are responsible for producing these error message data structures, but not for formatting. This allows validators to remain compact and still relatively easy to write, while allowing for robust and high-quality localizations.</p>
+<p>In practice, higher-level libraries written on top of these primitives should expose integration with localization libraries, but validators themselves can remain agnostic to those questions.</p>
+<a class="header" href="print.html#ui-friendly" id="ui-friendly"><h3>UI Friendly</h3></a>
+<p>A good validation library provides rich error information to a human end-user, typically presented via an interactive UI.</p>
+<p>This means that attempting to validate an entire object must:</p>
+<ul>
+<li>produce a list of validation errors</li>
+<li>identify precisely where the validation errors occured in a way that is consumable by an interactive UI</li>
+<li>provide the error messages in a format that can be localized into various languages and contexts</li>
+</ul>
+<p>This stands in contrast with traditional schema libraries, which usually assume that they are validating data against programmer error, and accept or reject entire entities.</p>
+<p>CrossCheck schemas are built on top of the CrossCheck validation primitive, which means that when a document fails to validate, you get a list of rich errors back that can be presented to an end user.</p>
+<p>In our original design exploration for CrossCheck, we wrote:</p>
+<blockquote>
+<p>The accurate placement of errors in a form (a UI concern!) is a key requirement of a good validation library.</p>
+</blockquote>
+<p>This is still a good guiding principle for CrossCheck. <strong>A good validation library cannot avoid considering UI concerns in its core design.</strong></p>
+<a class="header" href="print.html#framework-agnostic-but-framework-friendly" id="framework-agnostic-but-framework-friendly"><h3>Framework Agnostic, But Framework Friendly</h3></a>
+<p>CrossCheck was extracted from the requirements of a working validation system that powered Condé Nast's CMS, which is written in Ember.</p>
+<p>One of the main goals of the extraction was to allow people to define validation rules for their forms without needing to understand Ember or its object model.</p>
+<p>However, we wanted to make it possible to write validators that could be shared between vanilla environments and frameworks.</p>
+<p>This mostly amounts to two concerns.</p>
+<p><em>First</em>, applications should be able to expose well-defined &quot;services&quot; to validations. If a validator depends on such a service, and somebody wants to use the validator in a different environment (such as React Native), they will have a clear, pure-JavaScript definition of what they will need to implement.</p>
+<p>In practice, this means that integrations can expose things like a configuration service or feature flagging infrastructure.</p>
+<p><em>Second</em>, it should be possible to write a validator that looks up properties on an object, agnostic to how those properties should be looked up. For example, looking up a property in an Immutable.js Map requires the user to use .get(). Knockout turns computed getters into functions (to look up firstName on a Person object, you say person.firstName()).</p>
+<p>In the case of both of these issues (services and getters), the philosophy of CrossCheck is to expose hooks on an &quot;Environment&quot; that framework integrators can use to abstract these distinctions. Validators receive this environment as a parameter, and if validator definitions work through the Environment (e.g. looking up properties by using environment.get rather than direct indexing), they will be reusable in more environments and with more kinds of data structures.</p>
+<p>Because it can be difficult to remember to work through the environment all the time, the @cross-check/dsl library provides a number of abstractions that do the work for you. For example, the object() validator provided by @cross-check/dsl automatically looks up sub-properties by using environment.get.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            document.addEventListener('DOMContentLoaded', function() {
+                window.print();
+            })
+        </script>
+        
+
+        
+        <script src="ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="editor.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mode-rust.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-dawn.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-tomorrow_night.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        
+        <script src="searchindex.js" type="text/javascript" charset="utf-8"></script>
+        
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+    </body>
+</html>

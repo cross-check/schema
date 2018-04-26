@@ -3,24 +3,36 @@ import { unknown } from "ts-std";
 import { Label, Optionality, TypeLabel } from "./label";
 import { Interface, maybe } from "./utils";
 
-export function primitiveLabel(
-  { name, args = [] }: { name: string; args?: string[] },
-  description: string,
-  typescript: string
-): TypeLabel {
+export interface LabelOptions {
+  name: string;
+  args?: string[];
+  typescript: string;
+  description?: string;
+}
+
+export function label({
+  name,
+  args,
+  typescript,
+  description
+}: LabelOptions): TypeLabel {
   return {
     kind: "primitive",
-    schemaType: { name, args },
-    description,
+    schemaType: { name, args: args || [] },
+    description: description || typescript,
     typescript
   };
 }
 
 export class PrimitiveImpl {
+  readonly label: Label;
+
   constructor(
     private inner: ValidationBuilder<unknown>,
-    readonly label: Label
-  ) {}
+    primitiveLabel: Label
+  ) {
+    this.label = primitiveLabel;
+  }
 
   validation(): ValidationBuilder<unknown> {
     return this.inner;
@@ -31,10 +43,10 @@ export type Primitive = Interface<PrimitiveImpl>;
 
 export function toPrimitive(
   validation: ValidationBuilder<unknown>,
-  label: TypeLabel
+  typeLabel: TypeLabel
 ): Primitive {
   return new PrimitiveImpl(validation, {
-    type: label,
+    type: typeLabel,
     optionality: Optionality.None
   });
 }
@@ -42,8 +54,8 @@ export function toPrimitive(
 export class RequiredPrimitive implements Primitive {
   label: Label;
 
-  constructor(private inner: ValidationBuilder<unknown>, label: TypeLabel) {
-    this.label = { type: label, optionality: Optionality.Required };
+  constructor(private inner: ValidationBuilder<unknown>, typeLabel: TypeLabel) {
+    this.label = { type: typeLabel, optionality: Optionality.Required };
   }
 
   validation(): ValidationBuilder<unknown> {
@@ -52,8 +64,8 @@ export class RequiredPrimitive implements Primitive {
 }
 
 export class OptionalPrimitive implements Primitive {
-  static forValidation(v: ValidationBuilder<unknown>, label: TypeLabel) {
-    return new OptionalPrimitive(v, label);
+  static forValidation(v: ValidationBuilder<unknown>, typeLabel: TypeLabel) {
+    return new OptionalPrimitive(v, typeLabel);
   }
 
   static forPrimitive(p: Primitive): OptionalPrimitive {
@@ -94,7 +106,7 @@ export class Type implements AsType, AsRequired {
     return new Type(p, p);
   }
 
-  constructor(public type: Primitive, public base: Primitive) {}
+  constructor(public primitiveType: Primitive, public base: Primitive) {}
 
   asType(): Type {
     return this;
@@ -108,9 +120,9 @@ export class Type implements AsType, AsRequired {
 export class OptionalType implements AsType, AsRequired {
   static primitive(
     v: ValidationBuilder<unknown>,
-    label: TypeLabel
+    typeLabel: TypeLabel
   ): OptionalType {
-    let p = OptionalPrimitive.forValidation(v, label);
+    let p = OptionalPrimitive.forValidation(v, typeLabel);
     return new OptionalType(p, p);
   }
 
@@ -120,26 +132,26 @@ export class OptionalType implements AsType, AsRequired {
   }
 
   static forType(t: Type): OptionalType {
-    let type = OptionalPrimitive.forPrimitive(t.type);
+    let derived = OptionalPrimitive.forPrimitive(t.primitiveType);
     let base = OptionalPrimitive.forPrimitive(t.base);
 
-    return new OptionalType(type, base);
+    return new OptionalType(derived, base);
   }
 
   static derived(primitiveType: Primitive, primitiveBase: Primitive) {
-    let type = OptionalPrimitive.forPrimitive(primitiveType);
+    let derived = OptionalPrimitive.forPrimitive(primitiveType);
     let base = OptionalPrimitive.forPrimitive(primitiveBase);
 
-    return new OptionalType(type, base);
+    return new OptionalType(derived, base);
   }
 
   constructor(
-    private type: Interface<OptionalPrimitive>,
+    private derived: Interface<OptionalPrimitive>,
     private base: Interface<OptionalPrimitive>
   ) {}
 
   required(): Interface<Type> {
-    return new Type(this.type.required(), this.base);
+    return new Type(this.derived.required(), this.base);
   }
 
   asRequired(): Interface<Type> {
@@ -147,24 +159,28 @@ export class OptionalType implements AsType, AsRequired {
   }
 
   asType(): Interface<Type> {
-    return new Type(this.type, this.base);
+    return new Type(this.derived, this.base);
   }
 }
 
 export function primitive(
   v: ValidationBuilder<unknown>,
-  desc: TypeLabel
+  desc: LabelOptions
 ): TypeFunction {
-  let optional = OptionalType.primitive(v, desc);
+  let optional = OptionalType.primitive(v, label(desc));
   return () => optional;
 }
 
 export type TypeFunction = () => Interface<OptionalType>;
 
-export function derived(
-  type: Primitive,
+export function type(
+  v: ValidationBuilder<unknown>,
+  desc: LabelOptions,
   base: Interface<OptionalType>
 ): () => Interface<OptionalType> {
-  let optional = OptionalType.derived(type, base.asType().type);
+  let optional = OptionalType.derived(
+    toPrimitive(v, label(desc)),
+    base.asType().primitiveType
+  );
   return () => optional;
 }

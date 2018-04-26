@@ -1,0 +1,11 @@
+[book]
+authors = ["Yehuda Katz"]
+multilingual = false
+src = "src"
+title = "CrossCheck"
+
+[output.html.playpen]
+editable = true
+
+[build]
+build-dir = "../docs"

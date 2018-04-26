@@ -1,5 +1,5 @@
 import { assert } from "ts-std";
-import { Label, Optionality } from "./label";
+import { Label, Optionality, PrimitiveLabel } from "./label";
 
 export class Buffer {
   constructor(private buf: string = "") {}
@@ -13,13 +13,53 @@ export class Buffer {
   }
 }
 
+export interface Reporters {
+  Value: ReporterStateConstructor;
+  Structure: ReporterStateConstructor;
+  List: ReporterStateConstructor;
+}
+
+export interface State {
+  buffer: Buffer;
+  padding: number;
+}
+
+export interface ReporterDelegate {
+  structure: {
+    startKey(
+      key: string,
+      position: Position,
+      optionality: Optionality,
+      state: State
+    ): string | void;
+    closeValue(position: Position, state: State): void;
+    closeDictionary(
+      position: Position,
+      opotionality: Optionality,
+      state: State
+    ): void;
+  };
+
+  list: {
+    openDictionary(position: Position, state: State): void;
+    closeList(position: Position, state: State): void;
+  };
+
+  value: {
+    openDictionary(position: Position, state: State): void;
+    closeDictionary(position: Position, state: State): void;
+    openList(position: Position, state: State): void;
+    primitiveValue(label: Label<PrimitiveLabel>, state: State): void;
+  };
+}
+
 export class Reporter {
   private buffer = new Buffer();
   private stack: ReporterState[] = [];
   private pad = 0;
 
-  constructor(State: ReporterStateConstructor) {
-    this.stack.push(new State(this.buffer, this.pad, this.stack));
+  constructor(State: ReporterStateConstructor, reporters: ReporterDelegate) {
+    this.stack.push(new State(this.buffer, this.pad, this.stack, reporters));
   }
 
   finish(): string {
@@ -93,7 +133,12 @@ export class Reporter {
 }
 
 export interface ReporterStateConstructor {
-  new (buffer: Buffer, pad: number, stack: ReporterState[]): ReporterState;
+  new (
+    buffer: Buffer,
+    pad: number,
+    stack: ReporterState[],
+    reporters: ReporterDelegate
+  ): ReporterState;
 }
 
 export enum Position {
@@ -106,7 +151,7 @@ export enum Position {
 export abstract class ReporterState {
   constructor(
     protected buffer: Buffer,
-    protected pad: number,
+    protected padding: number,
     protected stack: ReporterState[]
   ) {}
 
@@ -145,6 +190,24 @@ export abstract class ReporterState {
   startPrimitiveValue?(position: Position): void;
   primitiveValue?(type: Label): void;
   endPrimitiveValue?(position: Position): true | void;
+
+  protected state(): State {
+    return {
+      padding: this.padding,
+      buffer: this.buffer
+    };
+  }
+}
+
+export abstract class AbstractReporterState extends ReporterState {
+  constructor(
+    buffer: Buffer,
+    pad: number,
+    stack: ReporterState[],
+    protected reporters: ReporterDelegate
+  ) {
+    super(buffer, pad, stack);
+  }
 }
 
 function ifHasEvent<

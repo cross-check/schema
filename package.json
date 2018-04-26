@@ -8,9 +8,7 @@
   "ember-addon": {
     "main": "ember-addon.js"
   },
-  "keywords": [
-    "ember-addon"
-  ],
+  "keywords": ["ember-addon"],
   "scripts": {
     "problems": "node ./scripts/problems.js",
     "preversion": "npm run test",
@@ -31,7 +29,8 @@
     "qunitjs": "^2.4.0",
     "shelljs": "^0.7.8",
     "tslint": "^5.7.0",
-    "typescript": "~2.8.0"
+    "typescript": "~2.8.0",
+    "tslint-config-prettier": "^1.12.0"
   },
   "dependencies": {
     "@cross-check/core": "^0.8.0",

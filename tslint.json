@@ -1,5 +1,4 @@
 {
-  "extends": "tslint:recommended",
   "defaultSeverity": "warning",
   "rules": {
     "arrow-parens": [true, "ban-single-arg-parens"],
@@ -12,6 +11,12 @@
     "no-duplicate-imports": true,
     "no-empty-interface": false,
     "object-literal-sort-keys": false,
+    "no-shadowed-variable": [
+      true,
+      {
+        "method": false
+      }
+    ],
     "ordered-imports": [
       true,
       {
@@ -42,5 +47,6 @@
       "check-type-operator",
       "check-typecast"
     ]
-  }
+  },
+  "extends": ["tslint:recommended", "tslint-config-prettier"]
 }

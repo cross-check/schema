@@ -14,7 +14,7 @@ export class FormatValidator extends ValueValidator<string, RegExp> {
     if (this.options.test(value)) {
       return;
     } else {
-      return { key: "format", args: this.options };
+      return { name: "format", details: this.options };
     }
   }
 }

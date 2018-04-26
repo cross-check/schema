@@ -1,0 +1,224 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Introduction - CrossCheck</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+
+        <link rel="stylesheet" href="book.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="_FontAwesome/css/font-awesome.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+
+    </head>
+    <body class="light">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            if (theme === null || theme === undefined) { theme = 'light'; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <ol class="chapter"><li><a href="introduction.html" class="active"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="schemas.html"><strong aria-hidden="true">2.</strong> Schema</a></li><li><a href="validations.html"><strong aria-hidden="true">3.</strong> Validations</a></li><li><a href="types.html"><strong aria-hidden="true">4.</strong> Custom Types</a></li><li><a href="formatters.html"><strong aria-hidden="true">5.</strong> Formatters</a></li><li><a href="philosophy.html"><strong aria-hidden="true">6.</strong> Philosophy</a></li></ol>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light <span class="default">(default)</span></button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">CrossCheck</h1> 
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <a class="header" href="introduction.html#introduction" id="introduction"><h1>Introduction</h1></a>
+<p>CrossCheck is a highly composable and ergonomic validation library.</p>
+<p>It was extracted from Conde Nast CMS system, which supports more than 100 brands with similar, but not always identical validation requirements. This environment gives rise to significant extensibility requirements, so CrossCheck's primitives are designed with extensibility in mind.</p>
+<p>All CrossCheck primitives produce well-typed, well-defined JSON objects. This is intended to allow applications to store schemas in a database or build UIs to generate them.</p>
+<a class="header" href="introduction.html#extensibility-first" id="extensibility-first"><h2>Extensibility First</h2></a>
+<p>CrossCheck schemas can be <strong>extended</strong>. You can create a single base type that can be customized for different uses or by different brands in a larger organization.</p>
+<p>CrossCheck schemas can be <strong>evolved</strong> without big-bang data migrations. Instead, data created under v1 of a schema can be viewed through the lens of v2 of the same schema. Schema evolution is baked into CrossCheck from the ground up.</p>
+<p>CrossCheck schemas are <strong>resilient</strong> to old, invalid data or improperly imported data. Define fix-up rules for invalid data and CrossCheck can clean up broken data on the fly. No need to run migrations against all your old data or force every API client to harden itself against the possibility of broken data.</p>
+<a class="header" href="introduction.html#important-schema-features" id="important-schema-features"><h2>Important Schema Features</h2></a>
+<ul>
+<li><strong>Draft Mode</strong>: Defining a schema automatically generates a &quot;draft schema&quot;, to make it easier to save in-progress work that doesn't yet satisfy the strict schema requirements.</li>
+<li><strong>Rich Types</strong>: Any concept that you can write a validation function for can be used as a schema type: URL, single word string, Date formatted as 8601, etc.</li>
+<li><strong>Composable Types</strong>: Put types inside of lists or dictionaries, and get errors when the constituent parts are invalid.</li>
+<li><strong>Custom Types</strong>: Turn any CrossCheck validator into a CrossCheck schema type.</li>
+<li><strong>TypeScript Support</strong>: Turn any CrossCheck schema into a TypeScript interface.</li>
+<li><strong>Pretty Printing</strong>: Use the CrossCheck formatter API to turn your schema into the format expected by another library. Need to generate MobX classes? Want to generate GraphQL schemas? No problem!</li>
+</ul>
+<a class="header" href="introduction.html#important-validator-features" id="important-validator-features"><h2>Important Validator Features</h2></a>
+<ul>
+<li><strong>Value-based</strong>: Validate values, not just objects (&quot;validate that this value is a titlecase string&quot;)</li>
+<li><strong>Async</strong>: Validators can be async (&quot;validate that this is a unique email address&quot;)</li>
+<li><strong>No exceptions</strong>: Validators produce an error list and don't throw exceptions</li>
+<li><strong>Easy to Localize</strong>: Validation errors are structured data, not an English string (so errors can be easily localized)</li>
+<li><strong>Composable</strong>: Validators can be pipelined: &quot;this type should not be null, and then it should be a string, and then it should be a valid email&quot;. Sub-validators can be reused, making it easier to build up larger validations and ensuring that errors have a consistent structure.</li>
+<li><strong>Framework Friendly</strong>: Validation rules are agnostic to how properties are looked up inside of object (so they naturally support Immutable.js or other APIs that look up properties using <code>.get</code> or similar)</li>
+<li><strong>Pretty Printing</strong>: CrossCheck can pretty-print validators for documentation and debugging</li>
+<li>A single validator can produce multiple errors</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+                            <a rel="next" href="schemas.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+                    <a href="schemas.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script src="ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="editor.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mode-rust.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-dawn.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-tomorrow_night.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        
+        <script src="searchindex.js" type="text/javascript" charset="utf-8"></script>
+        
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+    </body>
+</html>

@@ -1,5 +1,5 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
-import { TypeFunction, primitive, primitiveLabel } from "copilot-schema";
+import { TypeFunction, primitive } from "copilot-schema";
 
 function isValidDate(input: string): boolean {
   let parsed = Date.parse(input);
@@ -12,7 +12,8 @@ export const isDate: ValidationBuilder<string> = validators.is(
   "iso-date"
 )();
 
-export const ISODate: TypeFunction = primitive(
-  isDate,
-  primitiveLabel({ name: "Date" }, "ISO Date", "Date")
-);
+export const ISODate: TypeFunction = primitive(isDate, {
+  name: "Date",
+  description: "ISO Date",
+  typescript: "Date"
+});

@@ -41,11 +41,11 @@ export class DictionaryType implements Interface<Type> {
   constructor(private inner: Dict<AsType>) {}
 
   // A dictionary's type is the type of its members
-  get type(): Primitive {
+  get primitiveType(): Primitive {
     let o = dict<Primitive>();
 
     for (let [key, value] of entries(this.inner)) {
-      o[key] = value!.asType().type;
+      o[key] = value!.asType().primitiveType;
     }
 
     return new PrimitiveDictionary(o);

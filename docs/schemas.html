@@ -1,0 +1,382 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Schema - CrossCheck</title>
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <base href="">
+
+        <link rel="stylesheet" href="book.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <link rel="shortcut icon" href="favicon.png">
+
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="_FontAwesome/css/font-awesome.css">
+
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+
+    </head>
+    <body class="light">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { } 
+            if (theme === null || theme === undefined) { theme = 'light'; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <ol class="chapter"><li><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><a href="schemas.html" class="active"><strong aria-hidden="true">2.</strong> Schema</a></li><li><a href="validations.html"><strong aria-hidden="true">3.</strong> Validations</a></li><li><a href="types.html"><strong aria-hidden="true">4.</strong> Custom Types</a></li><li><a href="formatters.html"><strong aria-hidden="true">5.</strong> Formatters</a></li><li><a href="philosophy.html"><strong aria-hidden="true">6.</strong> Philosophy</a></li></ol>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light <span class="default">(default)</span></button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">CrossCheck</h1> 
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <a class="header" href="schemas.html#schema" id="schema"><h1>Schema</h1></a>
+<p>Crosscheck Schemas allow you to define a schema for your data and use the schema to validate the data.</p>
+<p>Uniquely, it allows you to differentiate between &quot;draft&quot; data and published data without creating two separate schema definitions.</p>
+<p>For example, if a field in your schema has the &quot;URL&quot; type, you can allow that field to hold any string while the record is being drafted.</p>
+<p>This reduces friction when saving initial drafts of content types. It also makes it easy to implement &quot;auto-save&quot;, which is optimized for saving in-progress data.</p>
+<a class="header" href="schemas.html#basic-usage" id="basic-usage"><h1>Basic Usage</h1></a>
+<p>First, let's define a schema.</p>
+<pre><code class="language-ts">import { Schema, type } from &quot;@cross-check/schema&quot;;
+
+const schema = new Schema({
+  // SingleLine is a string that contains no newlines.
+  // Required means that the field must not be missing
+  title: type.SingleLine().required(),
+  subtitle: type.SingleLine(),
+
+  // Text is a string that can contain newlines
+  body: type.Text().required(),
+
+  // SingleWord is a string with no whitespace at all
+  tags: type.List(type.SingleWord()),
+
+  geo: Dictionary({
+    lat: type.Number().required(),
+    long: type.Number().required()
+  })
+});
+</code></pre>
+<p>Now, let's try to validate some content:</p>
+<pre><code class="language-ts">&gt; schema.validate({});
+[{
+  message: { key: &quot;type&quot;, args: &quot;present&quot; },
+  path: [&quot;title&quot;]
+}, {
+  message: { key: &quot;type&quot;, args: &quot;present&quot; },
+  path: [&quot;body&quot;]
+}]
+</code></pre>
+<p>The first thing to notice here is that Crosscheck returns a list of errors, rather than raising an exception. This allows you to use these errors in an interactive UI, and provide richer error information over web services.</p>
+<p>Additionally, Crosscheck errors are returned as data: a kind of error and the arguments to the validation. This allows you to present the errors in using application-appropriate language, as well as properly internationalize error messages.</p>
+<p>Under the hood, Crosscheck Schema uses the advanced <code>@cross-check/core</code> validation library to validate objects, a validation library extracted from the real-world requirements of the Conde Nast CMS. Its compositional, asynchronous core makes it a perfect fit for validating schemas with embedded lists and dictionaries. To learn more about the philosophy and mechanics of Crosscheck Validations, check out its <a href="https://github.com/cross-check/core/blob/master/README.md">README</a>.</p>
+<a class="header" href="schemas.html#drafts" id="drafts"><h2>Drafts</h2></a>
+<p>The schema we wrote is pretty strict. It absolutely requires a title and body. But when we're drafting an article, we don't want to be bothered with this kind of busywork just to save in-progress content. And worse, how could we implement auto-save for our form if our authors need to fix a bunch of validation errors before they can even get off the ground.</p>
+<p>To solve this problem, every schema creates a looser &quot;draft&quot; schema at the same time.</p>
+<pre><code class="language-ts">&gt; schema.draft.validate({});
+[]
+</code></pre>
+<p>Because we're validating the draft version of the schema, a completely empty document is totally fine.</p>
+<p>But not any kind of document will validate in the draft schema.</p>
+<pre><code class="language-ts">&gt; schema.draft.validate({ title: 12, geo: { lat: &quot;100&quot;, long: &quot;50&quot; } });
+[{
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;title&quot;]
+}, {
+  message: { key: &quot;type&quot;, args: &quot;number&quot; },
+  path: [&quot;geo&quot;, &quot;lat&quot;]
+}, {
+  message: { key: &quot;type&quot;, args: &quot;number&quot; },
+  path: [&quot;geo&quot;, &quot;long&quot;]
+}]
+</code></pre>
+<p>Even though we are generally loose with the kind of document we're willing to accept as a draft, we're still expected to pass the right basic data types if we send anything at all.</p>
+<p>The philosophy of drafts comes from two observations:</p>
+<ul>
+<li>We want to allow clients to send in-progress data that the user hasn't finished filling out, but the user is not responsible for picking the data type. For example, if a field is supposed to be a number, the client should user an appropriate number field, and pass a number back to the server.</li>
+<li>Servers need to store data in data stores (like relational databases) that apply some structure to the data. As a result, even when clients send drafts to the server, we want to be able to impose some constraints on the form of the data.</li>
+</ul>
+<p>To give a concrete example, consider a <code>Url</code> type that requires that its data is a valid URL. That type allows any string at all to be provided when used in draft mode. This satisfies the &quot;auto-save&quot; heuristic: the end user can type any text into the text box provided by the CMS, and we want to be able to save a draft even during this period.</p>
+<a class="header" href="schemas.html#required-and-optional-fields" id="required-and-optional-fields"><h1>Required and Optional Fields</h1></a>
+<p>As the above example illustrated, you can mark any field as required. If a field is not marked as required, it is optional.</p>
+<pre><code class="language-ts">import { Schema, type } from &quot;@cross-check/schema&quot;;
+
+const Person = new Schema({
+  first: type.SingleLine().required(),
+  middle: type.SingleLine(),
+  last: type.SingleLine().required()
+});
+</code></pre>
+<p>This <code>Person</code> schema requires a first and last name, but makes the middle name optional.</p>
+<pre><code class="language-ts">&gt; Person.validate({})
+[{
+  message: { key: &quot;first&quot;, args: &quot;present&quot; },
+  path: [&quot;title&quot;]
+}, {
+  message: { key: &quot;last&quot;, args: &quot;present&quot; },
+  path: [&quot;body&quot;]
+}]
+
+&gt; Person.draft.validate({})
+[]
+
+&gt; Person.validate({ first: &quot;Christina&quot;, last: &quot;Kung&quot; })
+[]
+
+&gt; Person.validate({ first: &quot;Christina&quot;, middle: &quot;multi\nline&quot;, last: &quot;Kung&quot; })
+[{
+  message: { key: &quot;type&quot;, args: &quot;string:single-line&quot; },
+  path: [&quot;middle&quot;]
+}]
+
+&gt; Person.draft.validate({ first: &quot;Christina&quot;, middle: &quot;multi\nline&quot;, last: &quot;Kung&quot; })
+[] // the draft version of a single-line string is any string
+
+&gt; Person.draft.validate({ first: &quot;Christina&quot;, middle: 12, last: &quot;Kung&quot; })
+[{
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;middle&quot;]
+}] // but you still can't pass a number
+</code></pre>
+<a class="header" href="schemas.html#lists" id="lists"><h1>Lists</h1></a>
+<p>You can also say that a field contains a list of items of a particular type.</p>
+<pre><code class="language-ts">import { Schema, type } from &quot;@cross-check/schema&quot;;
+
+const Article = new Schema({
+  headline: type.SingleLine(),
+  body: type.Text(),
+  tags: type.List(type.SingleWord())
+});
+</code></pre>
+<p>This Article schema has an optional headline and body, and an optional list of single words.</p>
+<pre><code class="language-ts">&gt; Article.validate({ tags: &quot;sometag&quot; })
+[{
+  message: { key: &quot;type&quot;, args: &quot;array&quot; },
+  path: [&quot;tags&quot;]
+}]
+
+&gt; Article.validate({ tags: [12, 15] })
+[{
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;tags&quot;, &quot;0&quot;]
+}, {
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;tags&quot;, &quot;1&quot;]
+}]
+
+&gt; Article.validate({ tags: [&quot;whoops too many words&quot;, &quot;totes-fine&quot;] })
+[{
+  message: { key: &quot;type&quot;, args: &quot;string:single-word&quot; },
+  path: [&quot;tags&quot;, &quot;0&quot;]
+}]
+
+&gt; Article.draft.validate({ tags: [12, 15] })
+[{
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;tags&quot;, &quot;0&quot;]
+}, {
+  message: { key: &quot;type&quot;, args: &quot;string&quot; },
+  path: [&quot;tags&quot;, &quot;1&quot;]
+}] // Even in draft mode, a number is not a string
+
+&gt; Article.validate({ tags: [&quot;too many words&quot;, &quot;totes-fine&quot;] })
+[] // but in draft mode, weird strings are ok
+</code></pre>
+<p>A list can contain other lists, dictionaries, or any other type.</p>
+<a class="header" href="schemas.html#dictionaries" id="dictionaries"><h1>Dictionaries</h1></a>
+<p>A field can also contain a dictionary.</p>
+<pre><code class="language-ts">import { Schema, type } from &quot;@cross-check/schema&quot;;
+
+const Location = new Schema({
+  geo: type.Dictionary({
+    lat: type.Number().required(),
+    long: type.Number().required()
+  })
+})
+</code></pre>
+<p>This location schema has a single <code>geo</code> field that contains a dictionary with two fields: a lat, which is a number, and a long, which is also a number. We have marked the <code>lat</code> and <code>long</code> as required, which means that if the dictionary is present, it must contain both a <code>lat</code> and <code>long</code>.</p>
+<p>Since the dictionary itself is optional, you can leave off the dictionary itself.</p>
+<pre><code class="language-ts">&gt; Location.validate({});
+[] // geo is optional
+
+&gt; Location.validate({ geo: { lat: 12 } })
+[{
+  message: { key: &quot;type&quot;, args: &quot;present&quot; },
+  path: [&quot;geo&quot;, &quot;long&quot;]
+}]
+</code></pre>
+<a class="header" href="schemas.html#custom-types" id="custom-types"><h1>Custom Types</h1></a>
+<a class="header" href="schemas.html#formatters" id="formatters"><h1>Formatters</h1></a>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="validations.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="validations.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script src="ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="editor.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mode-rust.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-dawn.js" type="text/javascript" charset="utf-8"></script>
+        <script src="theme-tomorrow_night.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        
+        <script src="searchindex.js" type="text/javascript" charset="utf-8"></script>
+        
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+    </body>
+</html>

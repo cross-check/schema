@@ -1,12 +1,5 @@
 import { ValidationBuilder } from "@cross-check/dsl";
-import {
-  Interface,
-  OptionalType,
-  derived,
-  primitiveLabel,
-  toPrimitive,
-  types
-} from "copilot-schema";
+import { Interface, OptionalType, type, types } from "copilot-schema";
 import { unknown } from "ts-std";
 import { format } from "./format";
 
@@ -18,8 +11,8 @@ export type UrlType =
   | "protocol-relative"
   | "leading-slash";
 
-function formatForType(type: UrlType): RegExp {
-  switch (type) {
+function formatForType(urlType: UrlType): RegExp {
+  switch (urlType) {
     case "absolute":
       return /^(https?:)?\/\/[^?#]+(\?[^#]*)?(#.*)?$/;
     case "relative":
@@ -35,24 +28,22 @@ function formatForType(type: UrlType): RegExp {
   }
 }
 
-export function url(...args: UrlType[]): ValidationBuilder<unknown> {
-  if (args.length === 0) {
+export function url(...details: UrlType[]): ValidationBuilder<unknown> {
+  if (details.length === 0) {
     return url("absolute");
   }
 
-  return args
+  return details
     .map(formatForType)
     .map(format)
     .reduce((chain, validator) => chain.or(validator))
-    .catch(() => [{ path: [], message: { key: "url", args } }]);
+    .catch(() => [{ path: [], message: { name: "url", details } }]);
 }
 
 export function Url(...args: UrlType[]): Interface<OptionalType> {
-  let validator = url(...args);
-  let urlPrimitive = toPrimitive(
-    validator,
-    primitiveLabel({ name: "Url", args }, "url", "string")
-  );
-
-  return derived(urlPrimitive, types.Text())();
+  return type(
+    url(...args),
+    { name: "Url", args, description: "url", typescript: "string" },
+    types.Text()
+  )();
 }

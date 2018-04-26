@@ -78,7 +78,7 @@ export class OptionalArrayType implements Interface<OptionalType> {
 
   required(): Interface<Type> {
     return new Type(
-      new RequiredPrimitiveArray(this.itemType.type),
+      new RequiredPrimitiveArray(this.itemType.primitiveType),
       new OptionalPrimitiveArray(this.itemType.base)
     );
   }
@@ -89,7 +89,7 @@ export class OptionalArrayType implements Interface<OptionalType> {
 
   asType(): Interface<Type> {
     return new Type(
-      new OptionalPrimitiveArray(this.itemType.type),
+      new OptionalPrimitiveArray(this.itemType.primitiveType),
       new OptionalPrimitiveArray(this.itemType.base)
     );
   }

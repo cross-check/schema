@@ -1,7 +1,5 @@
 import { ValidationError } from "@cross-check/core";
 import {
-  Dictionary,
-  Record,
   Schema,
   describe,
   schemaFormat,
@@ -13,14 +11,12 @@ import { Dict, unknown } from "ts-std";
 import { ISODate } from "./support";
 import { Url } from "./url";
 
-const { SingleLine, Text, List, Num } = types;
-
 QUnit.module("copilot-schema - simple schema");
 
 const SIMPLE = new Schema("simple-article", {
-  hed: SingleLine().required(),
-  dek: Text(),
-  body: Text().required()
+  hed: types.SingleLine().required(),
+  dek: types.Text(),
+  body: types.Text().required()
 });
 
 function validateDraft(
@@ -37,16 +33,16 @@ function validatePublished(
   return schema.validate(obj, ENV);
 }
 
-function typeError(kind: string, path: string) {
-  return { message: { args: kind, key: "type" }, path: path.split(".") };
+function typeError(kind: string, path: string): ValidationError {
+  return { message: { details: kind, name: "type" }, path: path.split(".") };
 }
 
 function missingError(path: string) {
   return typeError("present", path);
 }
 
-function error(kind: string, problem: unknown, path: string) {
-  return { message: { args: problem, key: kind }, path: path.split(".") };
+function error(kind: string, problem: unknown, path: string): ValidationError {
+  return { message: { details: problem, name: kind }, path: path.split(".") };
 }
 
 QUnit.test("labels", assert => {
@@ -166,16 +162,24 @@ const ENV = {
 QUnit.module("copilot-schema - detailed schema");
 
 const DETAILED = new Schema("medium-article", {
-  hed: SingleLine().required(),
-  dek: Text(),
-  body: Text().required(),
-  author: Dictionary({ first: SingleLine(), last: SingleLine() }),
+  hed: types.SingleLine().required(),
+  dek: types.Text(),
+  body: types.Text().required(),
+  author: types.Dictionary({
+    first: types.SingleLine(),
+    last: types.SingleLine()
+  }),
   issueDate: ISODate(),
   canonicalUrl: Url(),
-  tags: List(SingleLine()),
-  categories: List(SingleLine()).required(),
-  geo: Dictionary({ lat: Num().required(), long: Num().required() }),
-  contributors: List(Dictionary({ first: SingleLine(), last: SingleLine() }))
+  tags: types.List(types.SingleLine()),
+  categories: types.List(types.SingleLine()).required(),
+  geo: types.Dictionary({
+    lat: types.Integer().required(),
+    long: types.Integer().required()
+  }),
+  contributors: types.List(
+    types.Dictionary({ first: types.SingleLine(), last: types.SingleLine() })
+  )
 });
 
 QUnit.test("labels", assert => {
@@ -196,8 +200,8 @@ QUnit.test("labels", assert => {
       "tags?": "list of <single line string>",
       "categories": "list of <single line string>",
       "geo?": {
-        lat: "<number>",
-        long: "<number>"
+        lat: "<integer>",
+        long: "<integer>"
       },
       "contributors?": ["list of ", {
         "first?": "<single line string>",
@@ -221,8 +225,8 @@ QUnit.test("labels", assert => {
       "tags?": "list of <string>",
       "categories?": "list of <string>",
       "geo?": {
-        "lat?": "<number>",
-        "long?": "<number>"
+        "lat?": "<integer>",
+        "long?": "<integer>"
       },
       "contributors?": ["list of ", {
         "first?": "<string>",
@@ -299,8 +303,8 @@ QUnit.test("labels", assert => {
       tags: "List(SingleLine())",
       categories: "List(SingleLine())",
       geo: ["Dictionary(", {
-        lat: "Num().required()",
-        long: "Num().required()"
+        lat: "Integer().required()",
+        long: "Integer().required()"
       }, ")"],
       contributors: ["List(Dictionary(", {
         first: "SingleLine()",
@@ -325,8 +329,8 @@ QUnit.test("labels", assert => {
       tags: "List(Text())",
       categories: "List(Text())",
       geo: ["Dictionary(", {
-        lat: "Num()",
-        long: "Num()"
+        lat: "Integer()",
+        long: "Integer()"
       }, ")"],
       contributors: ["List(Dictionary(", {
         first: "Text()",
@@ -479,6 +483,20 @@ QUnit.test("optional dictionaries (geo)", async assert => {
     }),
     [typeError("number", "geo.lat"), typeError("number", "geo.long")],
     "nested fields in published documents use the schema type (but numbers aren't strings)"
+  );
+
+  assert.deepEqual(
+    await validatePublished(DETAILED, {
+      hed: "A single line",
+      body: "Hello world\nMore content",
+      geo: { lat: 10.5, long: 20.5 },
+      categories: ["single"]
+    }),
+    [
+      typeError("number:integer", "geo.lat"),
+      typeError("number:integer", "geo.long")
+    ],
+    "nested fields in published documents use the schema type (floats aren't integers)"
   );
 
   assert.deepEqual(
@@ -675,8 +693,11 @@ QUnit.module("Records");
 
 QUnit.test("optional records (geo)", async assert => {
   const RECORDS = new Schema("records", {
-    geo: Record({ lat: Num(), long: Num() }),
-    author: Record({ first: SingleLine(), last: SingleLine() })
+    geo: types.Record({ lat: types.Number(), long: types.Number() }),
+    author: types.Record({
+      first: types.SingleLine(),
+      last: types.SingleLine()
+    })
   });
 
   assert.deepEqual(
@@ -737,7 +758,7 @@ QUnit.test("optional records (geo)", async assert => {
 
 QUnit.test("required records (geo)", async assert => {
   const RECORDS = new Schema("records", {
-    geo: Record({ lat: Num(), long: Num() }).required()
+    geo: types.Record({ lat: types.Number(), long: types.Number() }).required()
   });
 
   assert.deepEqual(
@@ -785,7 +806,12 @@ QUnit.test("required records (geo)", async assert => {
   );
 
   const STRING_RECORDS = new Schema("string-records", {
-    author: Record({ first: SingleLine(), last: SingleLine() }).required()
+    author: types
+      .Record({
+        first: types.SingleLine(),
+        last: types.SingleLine()
+      })
+      .required()
   });
 
   assert.deepEqual(
@@ -807,8 +833,13 @@ QUnit.test("required records (geo)", async assert => {
 
 QUnit.test("labels", assert => {
   const RECORDS = new Schema("records", {
-    geo: Record({ lat: Num(), long: Num() }),
-    author: Record({ first: SingleLine(), last: SingleLine() }).required(),
+    geo: types.Record({ lat: types.Number(), long: types.Number() }),
+    author: types
+      .Record({
+        first: types.SingleLine(),
+        last: types.SingleLine()
+      })
+      .required(),
     date: ISODate()
   });
 
@@ -887,8 +918,8 @@ QUnit.test("labels", assert => {
     // prettier-ignore
     prettyPrint({
       geo: ["Dictionary(", {
-        lat: "Num().required()",
-        long: "Num().required()"
+        lat: "Number().required()",
+        long: "Number().required()"
       }, ")"],
       author: ["Dictionary(", {
         first: "SingleLine().required()",
@@ -904,8 +935,8 @@ QUnit.test("labels", assert => {
     // prettier-ignore
     prettyPrint({
       geo: ["Dictionary(", {
-        lat: "Num()",
-        long: "Num()"
+        lat: "Number()",
+        long: "Number()"
       }, ")"],
       author: ["Dictionary(", {
         first: "Text()",

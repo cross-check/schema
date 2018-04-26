@@ -1,3 +1,4 @@
+import { ValueReporter } from "./default";
 import {
   DictionaryLabel,
   Label,
@@ -5,10 +6,10 @@ import {
   PrimitiveLabel,
   Visitor
 } from "./label";
-import { Position, Reporter, ReporterState } from "./reporter";
+import { Position, Reporter, ReporterDelegate, State } from "./reporter";
 
 export function typescript(schema: DictionaryLabel): string {
-  let reporter = new Reporter(ValueReporter);
+  let reporter = new Reporter(ValueReporter, delegate);
   let visitor = new Visitor(reporter);
 
   return visitor.dictionary(
@@ -17,99 +18,59 @@ export function typescript(schema: DictionaryLabel): string {
   );
 }
 
-export class StructureReporter extends ReporterState {
-  addKey(key: string, _position: Position, optionality: Optionality): void {
-    this.buffer.push(
-      `${padding(this.pad * 2)}${formattedKey(key, optionality)}: `
-    );
-    this.stack.push(new ValueReporter(this.buffer, this.pad, this.stack));
+const structure: ReporterDelegate["structure"] = {
+  startKey(
+    key: string,
+    position: Position,
+    optionality: Optionality,
+    state: State
+  ): string {
+    return `${padding(state.padding * 2)}${formattedKey(key, optionality)}: `;
+  },
+
+  closeDictionary(
+    position: Position,
+    optionality: Optionality,
+    state: State
+  ): void {
+    state.buffer.push(`${padding(state.padding * 2)}}`);
+  },
+
+  closeValue(position: Position, state: State): void {
+    state.buffer.push(";\n");
   }
+};
 
-  endListValue(): void {
-    this.buffer.push(";\n");
+const list: ReporterDelegate["list"] = {
+  openDictionary(position: Position, state: State): void {
+    state.buffer.push(`{\n`);
+  },
+
+  closeList(position: Position, state: State): void {
+    state.buffer.push(">");
   }
+};
 
-  endPrimitiveValue(): void {
-    this.buffer.push(";\n");
+const value: ReporterDelegate["value"] = {
+  openDictionary(position: Position, state: State): void {
+    state.buffer.push(`{\n`);
+  },
+  closeDictionary(position: Position, state: State): void {
+    state.buffer.push(position === Position.WholeSchema ? "" : ";\n");
+  },
+  openList(position: Position, state: State): void {
+    state.buffer.push("Array<");
+  },
+  primitiveValue(label: Label<PrimitiveLabel>, state: State): void {
+    state.buffer.push(`${label.type.typescript}`);
   }
+};
 
-  endDictionary(): true {
-    this.pad -= 1;
-    this.buffer.push(`${padding(this.pad * 2)}}`);
-
-    this.stack.pop();
-    return true;
-  }
-}
-
-export class ListReporter extends ReporterState {
-  startPrimitiveValue(): void {
-    /* noop */
-  }
-
-  startDictionary(): void {
-    this.buffer.push(`{\n`);
-    this.pad += 1;
-    this.stack.push(new StructureReporter(this.buffer, this.pad, this.stack));
-  }
-
-  endDictionary(): void {
-    /* noop */
-  }
-
-  endListValue(): true {
-    this.buffer.push(">");
-    this.stack.pop();
-
-    return true;
-  }
-
-  endPrimitiveValue(): void {
-    /* noop */
-  }
-
-  primitiveValue(label: Label<PrimitiveLabel>): void {
-    this.buffer.push(`${label.type.typescript}`);
-  }
-}
-
-export class ValueReporter extends ReporterState {
-  startPrimitiveValue(): void {
-    /* noop */
-  }
-
-  startDictionary(): void {
-    this.buffer.push(`{\n`);
-    this.pad += 1;
-    this.stack.push(new StructureReporter(this.buffer, this.pad, this.stack));
-  }
-
-  endDictionary(position: Position): void {
-    this.buffer.push(position === Position.WholeSchema ? "" : ";\n");
-    this.stack.pop();
-  }
-
-  startListValue(): void {
-    this.buffer.push("Array<");
-    this.stack.push(new ListReporter(this.buffer, this.pad, this.stack));
-  }
-
-  endListValue(): true {
-    this.stack.pop();
-
-    return true;
-  }
-
-  endPrimitiveValue(): true {
-    this.stack.pop();
-
-    return true;
-  }
-
-  primitiveValue(label: Label<PrimitiveLabel>): void {
-    this.buffer.push(`${label.type.typescript}`);
-  }
-}
+const delegate: ReporterDelegate = {
+  structure,
+  list,
+  value
+};
 
 function formattedKey(key: string, optionality: Optionality): string {
   if (optionality === Optionality.Optional) {
