@@ -1,5 +1,5 @@
-import { Dict } from "ts-std";
-import { Position, Reporter } from "./reporter";
+import { Dict, unknown } from "ts-std";
+import { Accumulator, Position, Reporter } from "./reporter";
 
 export enum Optionality {
   Required,
@@ -40,33 +40,52 @@ export type TypeLabel =
   | TupleLabel
   | DictionaryLabel;
 
-export class Visitor {
-  constructor(private reporter: Reporter) {}
+export abstract class Visitor {
+  abstract primitive(label: Label<PrimitiveLabel>, position: Position): unknown;
+  abstract list(label: Label<ListLabel>, position: Position): unknown;
+  abstract dictionary(
+    label: Label<DictionaryLabel>,
+    position: Position
+  ): unknown;
 
-  visit(label: Label, position: Position): void {
+  visit(label: Label, position: Position = Position.Any): unknown {
     switch (label.type.kind) {
       case "primitive": {
-        this.reporter.startPrimitiveValue(position);
-        this.reporter.primitiveValue(label);
-        this.reporter.endPrimitiveValue(position);
-        break;
+        return this.primitive(label as Label<PrimitiveLabel>, position);
       }
 
       case "list": {
-        this.reporter.startListValue(position);
-        this.visit(label.type.item, Position.Only);
-        this.reporter.endListValue(position);
-        break;
+        return this.list(label as Label<ListLabel>, position);
       }
 
       case "dictionary": {
-        this.dictionary(label as Label<DictionaryLabel>, position);
-        break;
+        return this.dictionary(label as Label<DictionaryLabel>, position);
       }
     }
   }
+}
 
-  dictionary(label: Label<DictionaryLabel>, position: Position): string {
+export class StringVisitor<
+  Buffer extends Accumulator<Inner>,
+  Inner
+> extends Visitor {
+  constructor(private reporter: Reporter<Buffer, Inner>) {
+    super();
+  }
+
+  primitive(label: Label<PrimitiveLabel>, position: Position): unknown {
+    this.reporter.startPrimitiveValue(position);
+    this.reporter.primitiveValue(label);
+    this.reporter.endPrimitiveValue(position);
+  }
+
+  list(label: Label<ListLabel>, position: Position): unknown {
+    this.reporter.startListValue(position);
+    this.visit(label.type.item, Position.Only);
+    this.reporter.endListValue(position);
+  }
+
+  dictionary(label: Label<DictionaryLabel>, position: Position): Inner {
     this.reporter.startDictionary(position);
 
     let dictionary = label.type;

@@ -14,4 +14,10 @@ export {
   label
 } from "./type";
 export { Interface } from "./utils";
-export { describe, typescript, schemaFormat } from "./describe";
+export {
+  describe,
+  typescript,
+  schemaFormat,
+  serialize,
+  toJSON
+} from "./describe";

@@ -12,6 +12,8 @@ export {
   label,
   describe,
   typescript,
+  serialize,
+  toJSON,
   schemaFormat
 } from "./types";
 import * as types from "./types";

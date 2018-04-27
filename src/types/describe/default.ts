@@ -1,173 +1,408 @@
+import { Buffer as StringBuffer } from "./buffer";
 import { Label, Optionality, PrimitiveLabel } from "./label";
-import {
-  AbstractReporterState,
-  Buffer,
-  Position,
-  ReporterState,
-  Reporters
-} from "./reporter";
+import { Position, ReporterState } from "./reporter";
 
-export interface ReporterStateConstructor {
-  new (
-    buffer: Buffer,
-    pad: number,
-    stack: ReporterState[],
-    reporters: Reporters
-  ): ReporterState;
-}
-
-function pushStrings(value: string | void, buffer: Buffer): void {
-  if (typeof value === "string") {
+function pushStrings<Buffer, Inner>(value: Inner | void, buffer: Buffer): void {
+  if (buffer instanceof StringBuffer && typeof value === "string") {
     buffer.push(value);
   }
 }
 
-export class StructureReporter extends AbstractReporterState {
+export class SchemaReporter<Buffer, Inner> extends ReporterState<
+  Buffer,
+  Inner
+> {
+  /**
+   * Open the dictionary representing the entire schema.
+   *
+   * Stack:
+   *   Schema ->
+   *   Schema, Structure (and repeat)
+   * Calls:
+   *   None
+   */
+  startDictionary(): true {
+    this.push(StructureReporter);
+    return true;
+  }
+
+  /**
+   * Finish the schema.
+   *
+   * Stack:
+   *   Schema ->
+   *   Schema
+   * Calls:
+   *   None
+   */
+  endDictionary(): void {
+    /* noop: finish the outer dictionary */
+  }
+}
+
+export class StructureReporter<Buffer, Inner> extends ReporterState<
+  Buffer,
+  Inner
+> {
+  /**
+   * Open the current dictionary.
+   *
+   * Stack:
+   *   ... ->
+   *   ...
+   * Calls:
+   *   value#openDictionary
+   */
+  startDictionary(position: Position): void {
+    this.nesting += 1;
+
+    if (position === Position.WholeSchema) {
+      pushStrings(
+        this.reporters.openSchema({
+          buffer: this.buffer
+        }),
+        this.buffer
+      );
+    } else {
+      pushStrings(
+        this.reporters.openDictionary({
+          position,
+          nesting: this.nesting,
+          buffer: this.buffer
+        }),
+        this.buffer
+      );
+    }
+  }
+
+  /**
+   * Start a new key in the current dictionary.
+   *
+   * Stack:
+   *   ..., Structure ->
+   *   ..., Structure, Value
+   * Calls:
+   *   structure#emitKey
+   */
   addKey(key: string, position: Position, optionality: Optionality): void {
     pushStrings(
-      this.reporters.structure.startKey(
+      this.reporters.emitKey({
         key,
         position,
         optionality,
-        this.state()
-      ),
+        buffer: this.buffer,
+        nesting: this.nesting
+      }),
       this.buffer
     );
 
-    this.stack.push(
-      new ValueReporter(this.buffer, this.padding, this.stack, this.reporters)
-    );
+    this.push(ValueReporter);
   }
 
+  /**
+   * The current value was a list, and it is done.
+   *
+   * Stack:
+   *   ..., Structure ->
+   *   ..., Structure
+   * Calls:
+   *   structure#closeValue
+   */
   endListValue(position: Position): void {
     pushStrings(
-      this.reporters.structure.closeValue(position, this.state()),
+      this.reporters.closeValue({
+        position,
+        nesting: this.nesting,
+        buffer: this.buffer
+      }),
       this.buffer
     );
   }
 
+  /**
+   * The current value was a primitive, and it is done.
+   *
+   * Stack:
+   *   ..., Structure ->
+   *   ..., Structure
+   * Calls:
+   *   structure#closeValue
+   */
   endPrimitiveValue(position: Position): void {
     pushStrings(
-      this.reporters.structure.closeValue(position, this.state()),
+      this.reporters.closeValue({
+        position,
+        nesting: this.nesting,
+        buffer: this.buffer
+      }),
       this.buffer
     );
   }
 
+  /**
+   * The current dictionary is finished.
+   *
+   * Stack:
+   *   ..., Structure ->
+   *   ... (and repeat)
+   * Calls:
+   *   structure#closeDictionary
+   */
   endDictionary(position: Position, optionality: Optionality): true | void {
-    this.padding -= 1;
+    this.nesting -= 1;
 
-    pushStrings(
-      this.reporters.structure.closeDictionary(
-        position,
-        optionality,
-        this.state()
-      ),
-      this.buffer
-    );
+    if (position === Position.WholeSchema) {
+      pushStrings(
+        this.reporters.closeSchema({
+          buffer: this.buffer
+        }),
+        this.buffer
+      );
+    } else {
+      pushStrings(
+        this.reporters.closeDictionary({
+          position,
+          optionality,
+          buffer: this.buffer,
+          nesting: this.nesting
+        }),
+        this.buffer
+      );
+    }
 
-    this.stack.pop();
+    if (position !== Position.WholeSchema && position !== Position.Only) {
+      pushStrings(
+        this.reporters.closeValue({
+          position,
+          buffer: this.buffer,
+          nesting: this.nesting
+        }),
+        this.buffer
+      );
+    }
+
+    this.pop();
+    // assertTop(this.getStack(), ValueReporter, SchemaReporter);
     return true;
   }
 }
 
-export class ListReporter extends AbstractReporterState {
+export class ListReporter<Buffer, Inner> extends ReporterState<Buffer, Inner> {
+  /**
+   * The list contains a primitive value.
+   *
+   * Stack:
+   *   ..., List ->
+   *   ..., List, Value
+   * Calls:
+   *   None
+   */
   startPrimitiveValue(): void {
-    this.stack.push(
-      new ValueReporter(this.buffer, this.padding, this.stack, this.reporters)
-    );
+    this.push(ValueReporter);
   }
 
-  startDictionary(position: Position): void {
-    pushStrings(
-      this.reporters.list.openDictionary(position, this.state()),
-      this.buffer
-    );
-
-    this.padding += 1;
-    this.stack.push(
-      new StructureReporter(
-        this.buffer,
-        this.padding,
-        this.stack,
-        this.reporters
-      )
-    );
+  /**
+   * The list contains a dictionary.
+   *
+   * Stack:
+   *   ..., List ->
+   *   ..., List, Structure (and repeat)
+   * Calls:
+   *   None
+   */
+  startDictionary(): true {
+    this.push(StructureReporter);
+    return true;
   }
 
+  /**
+   * The list contains a dictionary.
+   *
+   * Stack:
+   *   ..., Value, List ->
+   *   ..., Value (and repeat)
+   * Calls:
+   *   None
+   */
   endDictionary(): void {
     /* noop */
   }
 
+  /**
+   * The list value has finished.
+   *
+   * Stack:
+   *   ..., Value, List ->
+   *   ..., Value (and repeat)
+   * Calls:
+   *   list#closeList
+   */
   endListValue(position: Position): true {
     pushStrings(
-      this.reporters.list.closeList(position, this.state()),
+      this.reporters.closeList({
+        position,
+        nesting: this.nesting,
+        buffer: this.buffer
+      }),
       this.buffer
     );
-    this.stack.pop();
+
+    this.pop();
+    assertTop(this.getStack(), ValueReporter);
     return true;
   }
 
+  /**
+   * The list value was a primitive, and it finished.
+   *
+   * Stack:
+   *   ..., List ->
+   *   ..., List
+   * Calls:
+   *   None
+   */
   endPrimitiveValue(): void {
     /* noop */
   }
 }
 
-export class ValueReporter extends AbstractReporterState {
+/**
+ * Comes from: List or Structure
+ */
+export class ValueReporter<Buffer, Inner> extends ReporterState<Buffer, Inner> {
+  /**
+   * The value is a primitive.
+   *
+   * Stack:
+   *   ..., Value ->
+   *   ..., Value
+   * Calls:
+   *   None
+   */
   startPrimitiveValue(): void {
     /* noop */
   }
 
+  /**
+   * Receive the primitive value.
+   *
+   * Stack:
+   *   ..., Value ->
+   *   ..., Value
+   * Calls:
+   *   value#primitiveValue
+   */
   primitiveValue(label: Label<PrimitiveLabel>): void {
     pushStrings(
-      this.reporters.value.primitiveValue(label, this.state()),
+      this.reporters.emitPrimitive({
+        label,
+        nesting: this.nesting,
+        buffer: this.buffer
+      }),
       this.buffer
     );
   }
 
+  /**
+   * The value is a dictionary.
+   *
+   * Stack:
+   *   ..., Value ->
+   *   ..., Value, Structure
+   * Calls:
+   *   value#openDictionary
+   */
   startDictionary(position: Position): void {
     pushStrings(
-      this.reporters.value.openDictionary(position, this.state()),
+      this.reporters.openDictionary({
+        position,
+        nesting: this.nesting,
+        buffer: this.buffer
+      }),
       this.buffer
     );
 
-    this.padding += 1;
-    this.stack.push(
-      new StructureReporter(
-        this.buffer,
-        this.padding,
-        this.stack,
-        this.reporters
-      )
-    );
+    this.nesting += 1;
+    this.push(StructureReporter);
   }
 
-  endDictionary(position: Position): void {
-    pushStrings(
-      this.reporters.value.closeDictionary(position, this.state()),
-      this.buffer
-    );
-    this.stack.pop();
+  /**
+   * The value was a dictionary and is done.
+   *
+   * Stack:
+   *   ..., Structure, Value ->
+   *   ..., Structure
+   * Calls:
+   *   value#closeValue
+   */
+  endDictionary(): void {
+    this.pop();
+    assertTop(this.getStack(), StructureReporter);
   }
 
+  /**
+   * The value is a List.
+   *
+   * Stack:
+   *   ..., Value ->
+   *   ..., Value, List
+   * Calls:
+   *   value#openList
+   */
   startListValue(position: Position): void {
     pushStrings(
-      this.reporters.value.openList(position, this.state()),
+      this.reporters.openList({
+        position,
+        nesting: this.nesting,
+        buffer: this.buffer
+      }),
       this.buffer
     );
-    this.stack.push(
-      new ListReporter(this.buffer, this.padding, this.stack, this.reporters)
-    );
+    this.push(ListReporter);
   }
 
+  /**
+   * The value was a list and is done.
+   *
+   * Stack:
+   *   ..., List, Value ->
+   *   ..., List (and repeat)
+   * Calls:
+   *   None
+   */
   endListValue(): true {
-    this.stack.pop();
+    this.pop();
+    assertTop(this.getStack(), ListReporter, StructureReporter);
 
     return true;
   }
 
-  endPrimitiveValue(): void | true {
-    this.stack.pop();
+  /**
+   * The value was a primitive and is done.
+   *
+   * Stack:
+   *   ..., Value ->
+   *   ... (and repeat)
+   * Calls:
+   *   None
+   */
+  endPrimitiveValue(): true {
+    this.pop();
 
     return true;
+  }
+}
+
+function assertTop<Buffer, Inner>(
+  stack: Array<ReporterState<Buffer, Inner>>,
+  ...states: Array<typeof ReporterState>
+): void {
+  let top = stack[stack.length - 1];
+  if (states.every(state => top.constructor !== state)) {
+    throw new Error(
+      `Expected top of stack to be ${states
+        .map(s => s.name)
+        .join(" or ")}, but got ${top.constructor.name}`
+    );
   }
 }

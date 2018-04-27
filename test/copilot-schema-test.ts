@@ -3,6 +3,8 @@ import {
   Schema,
   describe,
   schemaFormat,
+  serialize,
+  toJSON,
   types,
   typescript
 } from "copilot-schema";
@@ -45,9 +47,51 @@ function error(kind: string, problem: unknown, path: string): ValidationError {
   return { message: { details: problem, name: kind }, path: path.split(".") };
 }
 
+QUnit.test("string serialization", assert => {
+  assert.equal(
+    serialize(SIMPLE),
+
+    prettyPrint(
+      {
+        hed: `{ "type": "SingleLine", "details": [], "required": true }`,
+        dek: `{ "type": "Text", "details": [], "required": false }`,
+        body: `{ "type": "Text", "details": [], "required": true }`
+      },
+      { stringifyKeys: true }
+    )
+  );
+
+  assert.equal(
+    serialize(SIMPLE.draft),
+
+    prettyPrint(
+      {
+        hed: `{ "type": "Text", "details": [], "required": false }`,
+        dek: `{ "type": "Text", "details": [], "required": false }`,
+        body: `{ "type": "Text", "details": [], "required": false }`
+      },
+      { stringifyKeys: true }
+    )
+  );
+});
+
+QUnit.test("JSON serialization", assert => {
+  assert.deepEqual(toJSON(SIMPLE), {
+    hed: { type: "SingleLine", required: true },
+    dek: { type: "Text", required: false },
+    body: { type: "Text", required: true }
+  });
+
+  assert.deepEqual(toJSON(SIMPLE.draft), {
+    hed: { type: "Text", required: false },
+    dek: { type: "Text", required: false },
+    body: { type: "Text", required: false }
+  });
+});
+
 QUnit.test("labels", assert => {
   assert.equal(
-    describe(SIMPLE.label),
+    describe(SIMPLE),
 
     // prettier-ignore
     prettyPrint({
@@ -58,7 +102,7 @@ QUnit.test("labels", assert => {
   );
 
   assert.equal(
-    describe(SIMPLE.draft.label),
+    describe(SIMPLE.draft),
     prettyPrint({
       "hed?": "<string>",
       "dek?": "<string>",
@@ -67,7 +111,7 @@ QUnit.test("labels", assert => {
   );
 
   assert.equal(
-    typescript(SIMPLE.label),
+    typescript(SIMPLE),
 
     // prettier-ignore
     prettyPrint({
@@ -78,7 +122,7 @@ QUnit.test("labels", assert => {
   );
 
   assert.equal(
-    typescript(SIMPLE.draft.label),
+    typescript(SIMPLE.draft),
     prettyPrint(
       {
         "hed?": "string",
@@ -90,7 +134,7 @@ QUnit.test("labels", assert => {
   );
 
   assert.equal(
-    schemaFormat(SIMPLE.label),
+    schemaFormat(SIMPLE),
 
     // prettier-ignore
     prettyPrint({
@@ -101,7 +145,7 @@ QUnit.test("labels", assert => {
   );
 
   assert.equal(
-    schemaFormat(SIMPLE.draft.label),
+    schemaFormat(SIMPLE.draft),
     prettyPrint({
       hed: "Text()",
       dek: "Text()",
@@ -182,9 +226,126 @@ const DETAILED = new Schema("medium-article", {
   )
 });
 
-QUnit.test("labels", assert => {
+QUnit.test("JSON serialized - published", assert => {
+  let actual = toJSON(DETAILED);
+  let expected = {
+    hed: { type: "SingleLine", required: true },
+    dek: { type: "Text", required: false },
+    body: { type: "Text", required: true },
+    author: {
+      type: "Dictionary",
+      members: {
+        first: { type: "SingleLine", required: false },
+        last: { type: "SingleLine", required: false }
+      },
+      required: false
+    },
+
+    issueDate: { type: "Date", required: false },
+    canonicalUrl: { type: "Url", required: false },
+    tags: {
+      type: "List",
+      items: {
+        type: "SingleLine",
+        required: true
+      },
+      required: false
+    },
+    categories: {
+      type: "List",
+      items: {
+        type: "SingleLine",
+        required: true
+      },
+      required: true
+    },
+    geo: {
+      type: "Dictionary",
+      members: {
+        lat: { type: "Integer", required: true },
+        long: { type: "Integer", required: true }
+      },
+      required: false
+    },
+    contributors: {
+      type: "List",
+      required: false,
+      items: {
+        type: "Dictionary",
+        required: false,
+        members: {
+          first: { type: "SingleLine", required: false },
+          last: { type: "SingleLine", required: false }
+        }
+      }
+    }
+  };
+
+  assert.deepEqual(actual, expected);
+});
+
+QUnit.test("JSON serialized - draft", assert => {
+  let actual = toJSON(DETAILED.draft);
+  let expected = {
+    hed: { type: "Text", required: false },
+    dek: { type: "Text", required: false },
+    body: { type: "Text", required: false },
+    author: {
+      type: "Dictionary",
+      members: {
+        first: { type: "Text", required: false },
+        last: { type: "Text", required: false }
+      },
+      required: false
+    },
+
+    issueDate: { type: "Date", required: false },
+    canonicalUrl: { type: "Text", required: false },
+    tags: {
+      type: "List",
+      items: {
+        type: "Text",
+        // items inside lists are always required
+        required: true
+      },
+      required: false
+    },
+    categories: {
+      type: "List",
+      items: {
+        type: "Text",
+        required: true
+      },
+      required: false
+    },
+    geo: {
+      type: "Dictionary",
+      members: {
+        lat: { type: "Integer", required: false },
+        long: { type: "Integer", required: false }
+      },
+      required: false
+    },
+    contributors: {
+      type: "List",
+      required: false,
+      items: {
+        type: "Dictionary",
+        required: false,
+        members: {
+          first: { type: "Text", required: false },
+          last: { type: "Text", required: false }
+        }
+      }
+    }
+  };
+
+  assert.deepEqual(actual, expected);
+});
+
+QUnit.test("pretty printed", assert => {
   assert.equal(
-    describe(DETAILED.label),
+    describe(DETAILED),
 
     // prettier-ignore
     prettyPrint({
@@ -209,9 +370,11 @@ QUnit.test("labels", assert => {
       }]
     })
   );
+});
 
+QUnit.test("pretty printed draft", assert => {
   // prettier-ignore
-  assert.equal(describe(DETAILED.draft.label),
+  assert.equal(describe(DETAILED.draft),
     prettyPrint({
       "hed?": "<string>",
       "dek?": "<string>",
@@ -234,9 +397,11 @@ QUnit.test("labels", assert => {
       }]
     })
   );
+});
 
+QUnit.test("typescript", assert => {
   assert.equal(
-    typescript(DETAILED.label),
+    typescript(DETAILED),
     // prettier-ignore
     prettyPrint({
       "hed": "string",
@@ -260,9 +425,11 @@ QUnit.test("labels", assert => {
       }, ">"]
     }, FORMAT_TS)
   );
+});
 
+QUnit.test("typescript draft", assert => {
   assert.equal(
-    typescript(DETAILED.draft.label),
+    typescript(DETAILED.draft),
     // prettier-ignore
     prettyPrint({
       "hed?": "string",
@@ -286,9 +453,11 @@ QUnit.test("labels", assert => {
       }, ">"]
     }, FORMAT_TS)
   );
+});
 
+QUnit.test("round trip", assert => {
   assert.equal(
-    schemaFormat(DETAILED.label),
+    schemaFormat(DETAILED),
     // prettier-ignore
     prettyPrint({
       hed: "SingleLine().required()",
@@ -312,9 +481,11 @@ QUnit.test("labels", assert => {
       }, "))"]
     })
   );
+});
 
+QUnit.test("round trip draft", assert => {
   assert.equal(
-    schemaFormat(DETAILED.draft.label),
+    schemaFormat(DETAILED.draft),
     // prettier-ignore
     prettyPrint({
       hed: "Text()",
@@ -844,7 +1015,7 @@ QUnit.test("labels", assert => {
   });
 
   assert.equal(
-    describe(RECORDS.label),
+    describe(RECORDS),
 
     // prettier-ignore
     prettyPrint({
@@ -861,7 +1032,7 @@ QUnit.test("labels", assert => {
   );
 
   assert.equal(
-    describe(RECORDS.draft.label),
+    describe(RECORDS.draft),
 
     // prettier-ignore
     prettyPrint({
@@ -878,7 +1049,7 @@ QUnit.test("labels", assert => {
   );
 
   assert.equal(
-    typescript(RECORDS.label),
+    typescript(RECORDS),
 
     // prettier-ignore
     prettyPrint({
@@ -895,7 +1066,7 @@ QUnit.test("labels", assert => {
   );
 
   assert.equal(
-    typescript(RECORDS.draft.label),
+    typescript(RECORDS.draft),
     prettyPrint(
       {
         "geo?": {
@@ -913,7 +1084,7 @@ QUnit.test("labels", assert => {
   );
 
   assert.equal(
-    schemaFormat(RECORDS.label),
+    schemaFormat(RECORDS),
 
     // prettier-ignore
     prettyPrint({
@@ -930,7 +1101,7 @@ QUnit.test("labels", assert => {
   );
 
   assert.equal(
-    schemaFormat(RECORDS.draft.label),
+    schemaFormat(RECORDS.draft),
 
     // prettier-ignore
     prettyPrint({
@@ -955,13 +1126,19 @@ export interface PrettyPrintOptions {
   sep?: string;
   sepOnLast?: boolean;
   pad?: number;
+  stringifyKeys?: boolean;
 }
 
 const FORMAT_TS: PrettyPrintOptions = { sep: ";", sepOnLast: true };
 
 function prettyPrint(
   value: Value,
-  { sep = ",", sepOnLast = false, pad = 2 }: PrettyPrintOptions = {}
+  {
+    sep = ",",
+    sepOnLast = false,
+    pad = 2,
+    stringifyKeys = false
+  }: PrettyPrintOptions = {}
 ): string {
   if (typeof value === "string") {
     return value;
@@ -975,7 +1152,8 @@ function prettyPrint(
     let last = keys.length - 1;
 
     keys.forEach((key, i) => {
-      out += `${" ".repeat(pad)}${key}: `;
+      let k = stringifyKeys ? JSON.stringify(key) : key;
+      out += `${" ".repeat(pad)}${k}: `;
       out += prettyPrint(value[key]!, { sep, sepOnLast, pad: pad + 2 });
 
       if (last !== i || sepOnLast) {
