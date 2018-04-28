@@ -12,9 +12,14 @@ export interface Label<T extends TypeLabel = TypeLabel> {
   optionality: Optionality;
 }
 
+export interface SchemaType {
+  name: string;
+  args: string[];
+}
+
 export interface PrimitiveLabel {
   kind: "primitive";
-  schemaType: { name: string; args: string[] };
+  schemaType: SchemaType;
   description: string;
   typescript: string;
 }
@@ -40,38 +45,115 @@ export type TypeLabel =
   | TupleLabel
   | DictionaryLabel;
 
-export abstract class Visitor {
-  abstract primitive(label: Label<PrimitiveLabel>, position: Position): unknown;
-  abstract list(label: Label<ListLabel>, position: Position): unknown;
-  abstract dictionary(
-    label: Label<DictionaryLabel>,
-    position: Position
-  ): unknown;
+export interface VisitorDelegate {
+  primitive(label: Label<PrimitiveLabel>, position: Position): unknown;
+  list(label: Label<ListLabel>, position: Position): unknown;
+  dictionary(label: Label<DictionaryLabel>, position: Position): unknown;
+}
+
+export class Visitor {
+  constructor(private delegate: VisitorDelegate) {}
 
   visit(label: Label, position: Position = Position.Any): unknown {
     switch (label.type.kind) {
       case "primitive": {
-        return this.primitive(label as Label<PrimitiveLabel>, position);
+        return this.delegate.primitive(
+          label as Label<PrimitiveLabel>,
+          position
+        );
       }
 
       case "list": {
-        return this.list(label as Label<ListLabel>, position);
+        return this.delegate.list(label as Label<ListLabel>, position);
       }
 
       case "dictionary": {
-        return this.dictionary(label as Label<DictionaryLabel>, position);
+        return this.delegate.dictionary(
+          label as Label<DictionaryLabel>,
+          position
+        );
       }
     }
   }
 }
 
-export class StringVisitor<
-  Buffer extends Accumulator<Inner>,
-  Inner
-> extends Visitor {
-  constructor(private reporter: Reporter<Buffer, Inner>) {
-    super();
+function isRequired(position: Position, label: Label): boolean {
+  return (
+    position === Position.Only || label.optionality === Optionality.Required
+  );
+}
+
+export interface RecursiveDelegate {
+  primitive(type: SchemaType, required: boolean): unknown;
+  list(item: unknown, required: boolean): unknown;
+  dictionary(label: DictionaryLabel, required: boolean): unknown;
+  schema(label: DictionaryLabel, required: boolean): unknown;
+}
+
+export class RecursiveVisitor extends Visitor {
+  constructor(private recursiveDelegate: RecursiveDelegate) {
+    super({
+      primitive: (label, position) => this.primitive(label, position),
+      list: (label, position) => this.list(label, position),
+      dictionary: (label, position) => this.dictionary(label, position)
+    });
   }
+  primitive(label: Label<PrimitiveLabel>, position: Position): unknown {
+    let type = label.type.schemaType;
+    let required =
+      position === Position.Only || label.optionality === Optionality.Required;
+
+    return this.recursiveDelegate.primitive(type, required);
+  }
+
+  list(label: Label<ListLabel>, position: Position): unknown {
+    return this.recursiveDelegate.list(
+      this.visit(label.type.item, Position.Only),
+      isRequired(position, label)
+    );
+  }
+
+  dictionary(label: Label<DictionaryLabel>, position: Position): unknown {
+    if (position === Position.WholeSchema) {
+      return this.recursiveDelegate.schema(
+        label.type,
+        isRequired(position, label)
+      );
+    } else {
+      return this.recursiveDelegate.dictionary(
+        label.type,
+        isRequired(position, label)
+      );
+    }
+  }
+
+  processDictionary(
+    label: DictionaryLabel,
+    callback: (item: unknown, key: string) => void
+  ): unknown {
+    let input = label.members;
+    let keys = Object.keys(input);
+    let last = keys.length - 1;
+
+    keys.forEach((key, i) => {
+      let dictPosition: Position;
+
+      if (i === 0) {
+        dictPosition = Position.First;
+      } else if (i === last) {
+        dictPosition = Position.Last;
+      } else {
+        dictPosition = Position.Middle;
+      }
+
+      callback(this.visit(input[key]!, dictPosition), key);
+    });
+  }
+}
+
+export class StringVisitor<Buffer extends Accumulator<Inner>, Inner> {
+  private visitor = new Visitor(this);
+  constructor(private reporter: Reporter<Buffer, Inner>) {}
 
   primitive(label: Label<PrimitiveLabel>, position: Position): unknown {
     this.reporter.startPrimitiveValue(position);
@@ -81,7 +163,7 @@ export class StringVisitor<
 
   list(label: Label<ListLabel>, position: Position): unknown {
     this.reporter.startListValue(position);
-    this.visit(label.type.item, Position.Only);
+    this.visitor.visit(label.type.item, Position.Only);
     this.reporter.endListValue(position);
   }
 
@@ -108,7 +190,7 @@ export class StringVisitor<
       }
 
       this.reporter.addKey(key, itemPosition, members[key]!.optionality);
-      this.visit(members[key]!, itemPosition);
+      this.visitor.visit(members[key]!, itemPosition);
     });
 
     this.reporter.endDictionary(position, label.optionality);

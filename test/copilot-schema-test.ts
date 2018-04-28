@@ -272,7 +272,8 @@ QUnit.test("JSON serialized - published", assert => {
       required: false,
       items: {
         type: "Dictionary",
-        required: false,
+        // list items are always required
+        required: true,
         members: {
           first: { type: "SingleLine", required: false },
           last: { type: "SingleLine", required: false }
@@ -331,7 +332,7 @@ QUnit.test("JSON serialized - draft", assert => {
       required: false,
       items: {
         type: "Dictionary",
-        required: false,
+        required: true,
         members: {
           first: { type: "Text", required: false },
           last: { type: "Text", required: false }
