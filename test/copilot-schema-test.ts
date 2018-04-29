@@ -2,6 +2,8 @@ import { ValidationError } from "@cross-check/core";
 import {
   Schema,
   describe,
+  graphql,
+  listTypes,
   schemaFormat,
   serialize,
   toJSON,
@@ -51,27 +53,25 @@ QUnit.test("string serialization", assert => {
   assert.equal(
     serialize(SIMPLE),
 
-    prettyPrint(
+    strip`
       {
-        hed: `{ "type": "SingleLine", "details": [], "required": true }`,
-        dek: `{ "type": "Text", "details": [], "required": false }`,
-        body: `{ "type": "Text", "details": [], "required": true }`
-      },
-      { stringifyKeys: true }
-    )
+        "hed": { "type": "SingleLine", "details": [], "required": true },
+        "dek": { "type": "Text", "details": [], "required": false },
+        "body": { "type": "Text", "details": [], "required": true }
+      }
+    `
   );
 
   assert.equal(
     serialize(SIMPLE.draft),
 
-    prettyPrint(
+    strip`
       {
-        hed: `{ "type": "Text", "details": [], "required": false }`,
-        dek: `{ "type": "Text", "details": [], "required": false }`,
-        body: `{ "type": "Text", "details": [], "required": false }`
-      },
-      { stringifyKeys: true }
-    )
+        "hed": { "type": "Text", "details": [], "required": false },
+        "dek": { "type": "Text", "details": [], "required": false },
+        "body": { "type": "Text", "details": [], "required": false }
+      }
+    `
   );
 });
 
@@ -89,68 +89,139 @@ QUnit.test("JSON serialization", assert => {
   });
 });
 
+QUnit.test("List types", assert => {
+  assert.deepEqual(listTypes(SIMPLE), ["SingleLine", "Text"]);
+});
+
+const GRAPHQL_SCALAR_MAP = {
+  // Custom scalars
+  SingleLine: "SingleLine",
+  ISODate: "ISODate",
+  Url: "Url",
+
+  Text: "String",
+  Integer: "Int",
+  Number: "Float",
+  Boolean: "Boolean"
+};
+
+function strip(
+  strings: TemplateStringsArray,
+  ...expressions: unknown[]
+): string {
+  let result = strings
+    .map((s, i) => `${s}${expressions[i] ? expressions[i] : ""}`)
+    .join("");
+
+  let lines = result.split("\n").slice(1, -1);
+
+  let leading = lines.reduce((accum, line) => {
+    let size = line.match(/^(\s*)/)![1].length;
+    return Math.min(accum, size);
+  }, Infinity);
+
+  lines = lines.map(l => l.slice(leading));
+
+  return lines.join("\n");
+}
+
+QUnit.test("graphql", assert => {
+  assert.equal(
+    graphql(SIMPLE, { name: "Simple", scalarMap: GRAPHQL_SCALAR_MAP }),
+    strip`
+      type Simple {
+        hed: SingleLine!
+        dek: String
+        body: String!
+      }
+    `
+  );
+
+  assert.equal(
+    graphql(SIMPLE.draft, { name: "Simple", scalarMap: GRAPHQL_SCALAR_MAP }),
+    strip`
+      type Simple {
+        hed: String
+        dek: String
+        body: String
+      }
+    `
+  );
+});
+
 QUnit.test("labels", assert => {
   assert.equal(
     describe(SIMPLE),
 
-    // prettier-ignore
-    prettyPrint({
-      "hed": "<single line string>",
-      "dek?": "<string>",
-      "body": "<string>"
-    })
+    strip`
+      {
+        hed: <single line string>,
+        dek?: <string>,
+        body: <string>
+      }
+    `
   );
 
   assert.equal(
     describe(SIMPLE.draft),
-    prettyPrint({
-      "hed?": "<string>",
-      "dek?": "<string>",
-      "body?": "<string>"
-    })
-  );
 
-  assert.equal(
-    typescript(SIMPLE),
-
-    // prettier-ignore
-    prettyPrint({
-      "hed": "string",
-      "dek?": "string",
-      "body": "string"
-    }, FORMAT_TS)
-  );
-
-  assert.equal(
-    typescript(SIMPLE.draft),
-    prettyPrint(
+    strip`
       {
-        "hed?": "string",
-        "dek?": "string",
-        "body?": "string"
-      },
-      FORMAT_TS
-    )
+        hed?: <string>,
+        dek?: <string>,
+        body?: <string>
+      }
+    `
   );
 
   assert.equal(
     schemaFormat(SIMPLE),
 
-    // prettier-ignore
-    prettyPrint({
-      hed: "SingleLine().required()",
-      dek: "Text()",
-      body: "Text().required()"
-    })
+    strip`
+      {
+        hed: SingleLine().required(),
+        dek: Text(),
+        body: Text().required()
+      }
+    `
   );
 
   assert.equal(
     schemaFormat(SIMPLE.draft),
-    prettyPrint({
-      hed: "Text()",
-      dek: "Text()",
-      body: "Text()"
-    })
+
+    strip`
+      {
+        hed: Text(),
+        dek: Text(),
+        body: Text()
+      }
+    `
+  );
+});
+
+QUnit.test("typescript", assert => {
+  assert.equal(
+    typescript(SIMPLE, { name: "SimpleArticle" }),
+
+    strip`
+      export interface SimpleArticle {
+        hed: string;
+        dek?: string;
+        body: string;
+      }
+    `
+  );
+
+  assert.equal(
+    typescript(SIMPLE.draft, { name: "SimpleArticleDraft" }),
+
+    strip`
+      export interface SimpleArticleDraft {
+        hed?: string;
+        dek?: string;
+        body?: string;
+      }
+    `
   );
 });
 
@@ -226,6 +297,54 @@ const DETAILED = new Schema("medium-article", {
   )
 });
 
+QUnit.test("List types", assert => {
+  assert.deepEqual(listTypes(DETAILED), [
+    "Dictionary",
+    "ISODate",
+    "Integer",
+    "List",
+    "SingleLine",
+    "Text",
+    "Url"
+  ]);
+});
+
+QUnit.test("GraphQL", assert => {
+  assert.equal(
+    graphql(DETAILED, { name: "MediumArticle", scalarMap: GRAPHQL_SCALAR_MAP }),
+
+    strip`
+    type MediumArticle_author {
+      first: SingleLine
+      last: SingleLine
+    }
+    
+    type MediumArticle_geo {
+      lat: Int!
+      long: Int!
+    }
+    
+    type MediumArticle_contributors {
+      first: SingleLine
+      last: SingleLine
+    }
+    
+    type MediumArticle {
+      hed: SingleLine!
+      dek: String
+      body: String!
+      author: MediumArticle_author
+      issueDate: ISODate
+      canonicalUrl: Url
+      tags: [SingleLine!]
+      categories: [SingleLine!]!
+      geo: MediumArticle_geo
+      contributors: [MediumArticle_contributors!]
+    }
+    `
+  );
+});
+
 QUnit.test("JSON serialized - published", assert => {
   let actual = toJSON(DETAILED);
   let expected = {
@@ -241,7 +360,7 @@ QUnit.test("JSON serialized - published", assert => {
       required: false
     },
 
-    issueDate: { type: "Date", required: false },
+    issueDate: { type: "ISODate", required: false },
     canonicalUrl: { type: "Url", required: false },
     tags: {
       type: "List",
@@ -300,7 +419,7 @@ QUnit.test("JSON serialized - draft", assert => {
       required: false
     },
 
-    issueDate: { type: "Date", required: false },
+    issueDate: { type: "ISODate", required: false },
     canonicalUrl: { type: "Text", required: false },
     tags: {
       type: "List",
@@ -348,167 +467,179 @@ QUnit.test("pretty printed", assert => {
   assert.equal(
     describe(DETAILED),
 
-    // prettier-ignore
-    prettyPrint({
-      "hed": "<single line string>",
-      "dek?": "<string>",
-      "body": "<string>",
-      "author?": {
-        "first?": "<single line string>",
-        "last?": "<single line string>"
-      },
-      "issueDate?": "<ISO Date>",
-      "canonicalUrl?": "<url>",
-      "tags?": "list of <single line string>",
-      "categories": "list of <single line string>",
-      "geo?": {
-        lat: "<integer>",
-        long: "<integer>"
-      },
-      "contributors?": ["list of ", {
-        "first?": "<single line string>",
-        "last?": "<single line string>"
-      }]
-    })
+    strip`
+      {
+        hed: <single line string>,
+        dek?: <string>,
+        body: <string>,
+        author?: {
+          first?: <single line string>,
+          last?: <single line string>
+        },
+        issueDate?: <ISO Date>,
+        canonicalUrl?: <url>,
+        tags?: list of <single line string>,
+        categories: list of <single line string>,
+        geo?: {
+          lat: <integer>,
+          long: <integer>
+        },
+        contributors?: list of {
+          first?: <single line string>,
+          last?: <single line string>
+        }
+      }
+    `
   );
 });
 
 QUnit.test("pretty printed draft", assert => {
-  // prettier-ignore
-  assert.equal(describe(DETAILED.draft),
-    prettyPrint({
-      "hed?": "<string>",
-      "dek?": "<string>",
-      "body?": "<string>",
-      "author?": {
-        "first?": "<string>",
-        "last?": "<string>"
-      },
-      "issueDate?": "<ISO Date>",
-      "canonicalUrl?": "<string>",
-      "tags?": "list of <string>",
-      "categories?": "list of <string>",
-      "geo?": {
-        "lat?": "<integer>",
-        "long?": "<integer>"
-      },
-      "contributors?": ["list of ", {
-        "first?": "<string>",
-        "last?": "<string>"
-      }]
-    })
+  assert.equal(
+    describe(DETAILED.draft),
+
+    strip`
+      {
+        hed?: <string>,
+        dek?: <string>,
+        body?: <string>,
+        author?: {
+          first?: <string>,
+          last?: <string>
+        },
+        issueDate?: <ISO Date>,
+        canonicalUrl?: <string>,
+        tags?: list of <string>,
+        categories?: list of <string>,
+        geo?: {
+          lat?: <integer>,
+          long?: <integer>
+        },
+        contributors?: list of {
+          first?: <string>,
+          last?: <string>
+        }
+      }
+    `
   );
 });
 
 QUnit.test("typescript", assert => {
   assert.equal(
-    typescript(DETAILED),
-    // prettier-ignore
-    prettyPrint({
-      "hed": "string",
-      "dek?": "string",
-      "body": "string",
-      "author?": {
-        "first?": "string",
-        "last?": "string"
-      },
-      "issueDate?": "Date",
-      "canonicalUrl?": "string",
-      "tags?": "Array<string>",
-      "categories": "Array<string>",
-      "geo?": {
-        lat: "number",
-        long: "number"
-      },
-      "contributors?": ["Array<", {
-        "first?": "string",
-        "last?": "string"
-      }, ">"]
-    }, FORMAT_TS)
+    typescript(DETAILED, { name: "MediumArticle" }),
+
+    strip`
+      export interface MediumArticle {
+        hed: string;
+        dek?: string;
+        body: string;
+        author?: {
+          first?: string;
+          last?: string;
+        };
+        issueDate?: Date;
+        canonicalUrl?: string;
+        tags?: Array<string>;
+        categories: Array<string>;
+        geo?: {
+          lat: number;
+          long: number;
+        };
+        contributors?: Array<{
+          first?: string;
+          last?: string;
+        }>;
+      }
+    `
   );
 });
 
 QUnit.test("typescript draft", assert => {
   assert.equal(
-    typescript(DETAILED.draft),
-    // prettier-ignore
-    prettyPrint({
-      "hed?": "string",
-      "dek?": "string",
-      "body?": "string",
-      "author?": {
-        "first?": "string",
-        "last?": "string"
-      },
-      "issueDate?": "Date",
-      "canonicalUrl?": "string",
-      "tags?": "Array<string>",
-      "categories?": "Array<string>",
-      "geo?": {
-        "lat?": "number",
-        "long?": "number"
-      },
-      "contributors?": ["Array<", {
-        "first?": "string",
-        "last?": "string"
-      }, ">"]
-    }, FORMAT_TS)
+    typescript(DETAILED.draft, { name: "MediumArticleDraft" }),
+
+    strip`
+      export interface MediumArticleDraft {
+        hed?: string;
+        dek?: string;
+        body?: string;
+        author?: {
+          first?: string;
+          last?: string;
+        };
+        issueDate?: Date;
+        canonicalUrl?: string;
+        tags?: Array<string>;
+        categories?: Array<string>;
+        geo?: {
+          lat?: number;
+          long?: number;
+        };
+        contributors?: Array<{
+          first?: string;
+          last?: string;
+        }>;
+      }
+    `
   );
 });
 
 QUnit.test("round trip", assert => {
   assert.equal(
     schemaFormat(DETAILED),
-    // prettier-ignore
-    prettyPrint({
-      hed: "SingleLine().required()",
-      dek: "Text()",
-      body: "Text().required()",
-      author: ["Dictionary(", {
-        first: "SingleLine()",
-        last: "SingleLine()"
-      }, ")"],
-      issueDate: "Date()",
-      canonicalUrl: "Url()",
-      tags: "List(SingleLine())",
-      categories: "List(SingleLine())",
-      geo: ["Dictionary(", {
-        lat: "Integer().required()",
-        long: "Integer().required()"
-      }, ")"],
-      contributors: ["List(Dictionary(", {
-        first: "SingleLine()",
-        last: "SingleLine()"
-      }, "))"]
-    })
+
+    strip`
+      {
+        hed: SingleLine().required(),
+        dek: Text(),
+        body: Text().required(),
+        author: Dictionary({
+          first: SingleLine(),
+          last: SingleLine()
+        }),
+        issueDate: ISODate(),
+        canonicalUrl: Url(),
+        tags: List(SingleLine()),
+        categories: List(SingleLine()),
+        geo: Dictionary({
+          lat: Integer().required(),
+          long: Integer().required()
+        }),
+        contributors: List(Dictionary({
+          first: SingleLine(),
+          last: SingleLine()
+        }))
+      }
+    `
   );
 });
 
 QUnit.test("round trip draft", assert => {
   assert.equal(
     schemaFormat(DETAILED.draft),
-    // prettier-ignore
-    prettyPrint({
-      hed: "Text()",
-      dek: "Text()",
-      body: "Text()",
-      author: ["Dictionary(", {
-        first: "Text()",
-        last: "Text()"
-      }, ")"],
-      issueDate: "Date()",
-      canonicalUrl: "Text()",
-      tags: "List(Text())",
-      categories: "List(Text())",
-      geo: ["Dictionary(", {
-        lat: "Integer()",
-        long: "Integer()"
-      }, ")"],
-      contributors: ["List(Dictionary(", {
-        first: "Text()",
-        last: "Text()"
-      }, "))"]
-    })
+
+    strip`
+      {
+        hed: Text(),
+        dek: Text(),
+        body: Text(),
+        author: Dictionary({
+          first: Text(),
+          last: Text()
+        }),
+        issueDate: ISODate(),
+        canonicalUrl: Text(),
+        tags: List(Text()),
+        categories: List(Text()),
+        geo: Dictionary({
+          lat: Integer(),
+          long: Integer()
+        }),
+        contributors: List(Dictionary({
+          first: Text(),
+          last: Text()
+        }))
+      }
+    `
   );
 });
 
@@ -1003,6 +1134,26 @@ QUnit.test("required records (geo)", async assert => {
   );
 });
 
+QUnit.test("List types", assert => {
+  const RECORDS = new Schema("records", {
+    geo: types.Record({ lat: types.Number(), long: types.Number() }),
+    author: types
+      .Record({
+        first: types.SingleLine(),
+        last: types.SingleLine()
+      })
+      .required(),
+    date: ISODate()
+  });
+
+  assert.deepEqual(listTypes(RECORDS), [
+    "Dictionary",
+    "ISODate",
+    "Number",
+    "SingleLine"
+  ]);
+});
+
 QUnit.test("labels", assert => {
   const RECORDS = new Schema("records", {
     geo: types.Record({ lat: types.Number(), long: types.Number() }),
@@ -1018,70 +1169,73 @@ QUnit.test("labels", assert => {
   assert.equal(
     describe(RECORDS),
 
-    // prettier-ignore
-    prettyPrint({
-      "geo?": {
-        lat: "<number>",
-        long: "<number>"
-      },
-      "author": {
-        first: "<single line string>",
-        last: "<single line string>"
-      },
-      "date?": "<ISO Date>"
-    })
+    strip`
+      {
+        geo?: {
+          lat: <number>,
+          long: <number>
+        },
+        author: {
+          first: <single line string>,
+          last: <single line string>
+        },
+        date?: <ISO Date>
+      }
+    `
   );
 
   assert.equal(
     describe(RECORDS.draft),
 
-    // prettier-ignore
-    prettyPrint({
-      "geo?": {
-        "lat?": "<number>",
-        "long?": "<number>"
-      },
-      "author?": {
-        "first?": "<string>",
-        "last?": "<string>"
-      },
-      "date?": "<ISO Date>"
-    })
-  );
-
-  assert.equal(
-    typescript(RECORDS),
-
-    // prettier-ignore
-    prettyPrint({
-      "geo?": {
-        lat: "number",
-        long: "number"
-      },
-      "author": {
-        first: "string",
-        last: "string"
-      },
-      "date?": "Date"
-    }, FORMAT_TS)
-  );
-
-  assert.equal(
-    typescript(RECORDS.draft),
-    prettyPrint(
+    strip`
       {
-        "geo?": {
-          "lat?": "number",
-          "long?": "number"
+        geo?: {
+          lat?: <number>,
+          long?: <number>
         },
-        "author?": {
-          "first?": "string",
-          "last?": "string"
+        author?: {
+          first?: <string>,
+          last?: <string>
         },
-        "date?": "Date"
-      },
-      FORMAT_TS
-    )
+        date?: <ISO Date>
+      }
+    `
+  );
+
+  assert.equal(
+    typescript(RECORDS, { name: "Records" }),
+
+    strip`
+      export interface Records {
+        geo?: {
+          lat: number;
+          long: number;
+        };
+        author: {
+          first: string;
+          last: string;
+        };
+        date?: Date;
+      }
+    `
+  );
+
+  assert.equal(
+    typescript(RECORDS.draft, { name: "RecordsDraft" }),
+
+    strip`
+      export interface RecordsDraft {
+        geo?: {
+          lat?: number;
+          long?: number;
+        };
+        author?: {
+          first?: string;
+          last?: string;
+        };
+        date?: Date;
+      }
+    `
   );
 
   assert.equal(
@@ -1097,7 +1251,7 @@ QUnit.test("labels", assert => {
         first: "SingleLine().required()",
         last: "SingleLine().required()"
       }, ").required()"],
-      date: "Date()"
+      date: "ISODate()"
     })
   );
 
@@ -1114,7 +1268,7 @@ QUnit.test("labels", assert => {
         first: "Text()",
         last: "Text()"
       }, ")"],
-      date: "Date()"
+      date: "ISODate()"
     })
   );
 });
@@ -1129,8 +1283,6 @@ export interface PrettyPrintOptions {
   pad?: number;
   stringifyKeys?: boolean;
 }
-
-const FORMAT_TS: PrettyPrintOptions = { sep: ";", sepOnLast: true };
 
 function prettyPrint(
   value: Value,

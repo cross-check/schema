@@ -13,7 +13,7 @@ export const isDate: ValidationBuilder<string> = validators.is(
 )();
 
 export const ISODate: TypeFunction = primitive(isDate, {
-  name: "Date",
+  name: "ISODate",
   description: "ISO Date",
   typescript: "Date"
 });

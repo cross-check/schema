@@ -8,9 +8,10 @@ function pushStrings<Buffer, Inner>(value: Inner | void, buffer: Buffer): void {
   }
 }
 
-export class SchemaReporter<Buffer, Inner> extends ReporterState<
+export class SchemaReporter<Buffer, Inner, Options> extends ReporterState<
   Buffer,
-  Inner
+  Inner,
+  Options
 > {
   /**
    * Open the dictionary representing the entire schema.
@@ -40,9 +41,10 @@ export class SchemaReporter<Buffer, Inner> extends ReporterState<
   }
 }
 
-export class StructureReporter<Buffer, Inner> extends ReporterState<
+export class StructureReporter<Buffer, Inner, Options> extends ReporterState<
   Buffer,
-  Inner
+  Inner,
+  Options
 > {
   /**
    * Open the current dictionary.
@@ -59,7 +61,8 @@ export class StructureReporter<Buffer, Inner> extends ReporterState<
     if (position === Position.WholeSchema) {
       pushStrings(
         this.reporters.openSchema({
-          buffer: this.buffer
+          buffer: this.buffer,
+          options: this.options
         }),
         this.buffer
       );
@@ -67,6 +70,7 @@ export class StructureReporter<Buffer, Inner> extends ReporterState<
       pushStrings(
         this.reporters.openDictionary({
           position,
+          options: this.options,
           nesting: this.nesting,
           buffer: this.buffer
         }),
@@ -90,6 +94,7 @@ export class StructureReporter<Buffer, Inner> extends ReporterState<
         key,
         position,
         optionality,
+        options: this.options,
         buffer: this.buffer,
         nesting: this.nesting
       }),
@@ -108,10 +113,12 @@ export class StructureReporter<Buffer, Inner> extends ReporterState<
    * Calls:
    *   structure#closeValue
    */
-  endListValue(position: Position): void {
+  endListValue(position: Position, optionality: Optionality): void {
     pushStrings(
       this.reporters.closeValue({
         position,
+        optionality,
+        options: this.options,
         nesting: this.nesting,
         buffer: this.buffer
       }),
@@ -128,10 +135,12 @@ export class StructureReporter<Buffer, Inner> extends ReporterState<
    * Calls:
    *   structure#closeValue
    */
-  endPrimitiveValue(position: Position): void {
+  endPrimitiveValue(position: Position, optionality: Optionality): void {
     pushStrings(
       this.reporters.closeValue({
         position,
+        optionality,
+        options: this.options,
         nesting: this.nesting,
         buffer: this.buffer
       }),
@@ -154,6 +163,7 @@ export class StructureReporter<Buffer, Inner> extends ReporterState<
     if (position === Position.WholeSchema) {
       pushStrings(
         this.reporters.closeSchema({
+          options: this.options,
           buffer: this.buffer
         }),
         this.buffer
@@ -163,6 +173,7 @@ export class StructureReporter<Buffer, Inner> extends ReporterState<
         this.reporters.closeDictionary({
           position,
           optionality,
+          options: this.options,
           buffer: this.buffer,
           nesting: this.nesting
         }),
@@ -174,6 +185,8 @@ export class StructureReporter<Buffer, Inner> extends ReporterState<
       pushStrings(
         this.reporters.closeValue({
           position,
+          optionality,
+          options: this.options,
           buffer: this.buffer,
           nesting: this.nesting
         }),
@@ -187,7 +200,11 @@ export class StructureReporter<Buffer, Inner> extends ReporterState<
   }
 }
 
-export class ListReporter<Buffer, Inner> extends ReporterState<Buffer, Inner> {
+export class ListReporter<Buffer, Inner, Options> extends ReporterState<
+  Buffer,
+  Inner,
+  Options
+> {
   /**
    * The list contains a primitive value.
    *
@@ -237,10 +254,12 @@ export class ListReporter<Buffer, Inner> extends ReporterState<Buffer, Inner> {
    * Calls:
    *   list#closeList
    */
-  endListValue(position: Position): true {
+  endListValue(position: Position, optionality: Optionality): true {
     pushStrings(
       this.reporters.closeList({
         position,
+        optionality,
+        options: this.options,
         nesting: this.nesting,
         buffer: this.buffer
       }),
@@ -269,7 +288,11 @@ export class ListReporter<Buffer, Inner> extends ReporterState<Buffer, Inner> {
 /**
  * Comes from: List or Structure
  */
-export class ValueReporter<Buffer, Inner> extends ReporterState<Buffer, Inner> {
+export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
+  Buffer,
+  Inner,
+  Options
+> {
   /**
    * The value is a primitive.
    *
@@ -296,6 +319,7 @@ export class ValueReporter<Buffer, Inner> extends ReporterState<Buffer, Inner> {
     pushStrings(
       this.reporters.emitPrimitive({
         label,
+        options: this.options,
         nesting: this.nesting,
         buffer: this.buffer
       }),
@@ -316,6 +340,7 @@ export class ValueReporter<Buffer, Inner> extends ReporterState<Buffer, Inner> {
     pushStrings(
       this.reporters.openDictionary({
         position,
+        options: this.options,
         nesting: this.nesting,
         buffer: this.buffer
       }),
@@ -393,8 +418,8 @@ export class ValueReporter<Buffer, Inner> extends ReporterState<Buffer, Inner> {
   }
 }
 
-function assertTop<Buffer, Inner>(
-  stack: Array<ReporterState<Buffer, Inner>>,
+function assertTop<Buffer, Inner, Options>(
+  stack: Array<ReporterState<Buffer, Inner, Options>>,
   ...states: Array<typeof ReporterState>
 ): void {
   let top = stack[stack.length - 1];

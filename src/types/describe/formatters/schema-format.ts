@@ -3,7 +3,7 @@ import formatter, { Formatter } from "../formatter";
 import { Label, Optionality, PrimitiveLabel } from "../label";
 import { Position, ReporterDelegate } from "../reporter";
 
-const delegate: ReporterDelegate<Buffer, string> = {
+const delegate: ReporterDelegate<Buffer, string, void> = {
   openSchema() {
     return `{\n`;
   },
@@ -61,4 +61,4 @@ function pad(size: number): string {
   return " ".repeat(size);
 }
 
-export const schemaFormat: Formatter = formatter(delegate, Buffer);
+export const schemaFormat: Formatter<void> = formatter(delegate, Buffer);

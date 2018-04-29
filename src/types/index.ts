@@ -19,5 +19,6 @@ export {
   typescript,
   schemaFormat,
   serialize,
-  toJSON
+  toJSON,
+  listTypes
 } from "./describe";

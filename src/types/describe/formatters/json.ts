@@ -1,5 +1,5 @@
 import { Dict, unknown } from "ts-std";
-import { HasLabel } from "../formatter";
+import { Schema } from "../formatter";
 import {
   DictionaryLabel,
   RecursiveDelegate,
@@ -7,10 +7,31 @@ import {
   SchemaType
 } from "../label";
 
+interface Primitive {
+  type: string;
+  args?: string[];
+  required: boolean;
+}
+
+interface List {
+  type: "List";
+  items: Item;
+  required: boolean;
+}
+
+interface Dictionary {
+  type: "Dictionary";
+  members: Dict<Item>;
+  required: boolean;
+}
+
+type Item = List | Primitive | Dictionary;
+
 class JSONFormatter implements RecursiveDelegate {
   private visitor = new RecursiveVisitor(this);
-  schema(label: DictionaryLabel): unknown {
-    let members = {} as Dict;
+
+  schema(label: DictionaryLabel): Dict<Item> {
+    let members = {} as Dict<Item>;
 
     this.visitor.processDictionary(label, (item, key) => {
       members[key] = item;
@@ -19,7 +40,7 @@ class JSONFormatter implements RecursiveDelegate {
     return members;
   }
 
-  primitive({ name: type, args }: SchemaType, required: boolean): unknown {
+  primitive({ name: type, args }: SchemaType, required: boolean): Primitive {
     if (args.length) {
       return { type, args, required };
     } else {
@@ -27,7 +48,7 @@ class JSONFormatter implements RecursiveDelegate {
     }
   }
 
-  list(item: unknown, required: boolean): unknown {
+  list(item: Item, required: boolean): List {
     return {
       type: "List",
       items: item,
@@ -35,7 +56,7 @@ class JSONFormatter implements RecursiveDelegate {
     };
   }
 
-  dictionary(label: DictionaryLabel, required: boolean): unknown {
+  dictionary(label: DictionaryLabel, required: boolean): Dictionary {
     return {
       type: "Dictionary",
       members: this.schema(label),
@@ -44,6 +65,6 @@ class JSONFormatter implements RecursiveDelegate {
   }
 }
 
-export function toJSON(schema: HasLabel): unknown {
+export function toJSON(schema: Schema): unknown {
   return new JSONFormatter().schema(schema.label);
 }

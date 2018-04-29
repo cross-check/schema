@@ -1,11 +1,15 @@
 import { Buffer } from "../buffer";
-import formatter from "../formatter";
+import formatter, { Formatter } from "../formatter";
 import { Optionality } from "../label";
 import { ReporterDelegate } from "../reporter";
 
-const delegate: ReporterDelegate<Buffer, string> = {
-  openSchema() {
-    return `{\n`;
+export interface TypescriptOptions {
+  name: string;
+}
+
+const delegate: ReporterDelegate<Buffer, string, TypescriptOptions> = {
+  openSchema({ options }) {
+    return `export interface ${options.name} {\n`;
   },
   closeSchema(): string {
     return `}`;
@@ -48,7 +52,7 @@ function pad(size: number): string {
   return " ".repeat(size);
 }
 
-export const typescript: ReturnType<typeof formatter> = formatter(
+export const typescript: Formatter<TypescriptOptions> = formatter(
   delegate,
   Buffer
 );

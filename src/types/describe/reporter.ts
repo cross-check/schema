@@ -2,10 +2,10 @@ import { assert } from "ts-std";
 import { Buffer as StringBuffer } from "./buffer";
 import { Label, Optionality, PrimitiveLabel } from "./label";
 
-export interface Reporters<Buffer, Inner> {
-  Value: ReporterStateConstructor<Buffer, Inner>;
-  Structure: ReporterStateConstructor<Buffer, Inner>;
-  List: ReporterStateConstructor<Buffer, Inner>;
+export interface Reporters<Buffer, Inner, Options> {
+  Value: ReporterStateConstructor<Buffer, Inner, Options>;
+  Structure: ReporterStateConstructor<Buffer, Inner, Options>;
+  List: ReporterStateConstructor<Buffer, Inner, Options>;
 }
 
 export interface State<Buffer> {
@@ -13,29 +13,34 @@ export interface State<Buffer> {
   nesting: number;
 }
 
-export interface ReporterDelegate<Buffer, Inner> {
-  openSchema(options: { buffer: Buffer }): Inner | void;
-  closeSchema(options: { buffer: Buffer }): Inner | void;
+export interface ReporterDelegate<Buffer, Inner, Options> {
+  openSchema(options: { buffer: Buffer; options: Options }): Inner | void;
+  closeSchema(options: { buffer: Buffer; options: Options }): Inner | void;
   emitKey(options: {
     key: string;
     position: Position;
     optionality: Optionality;
+    options: Options;
     buffer: Buffer;
     nesting: number;
   }): Inner | void;
   closeValue(options: {
     position: Position;
+    optionality: Optionality;
+    options: Options;
     buffer: Buffer;
     nesting: number;
   }): Inner | Buffer | void;
   openDictionary(options: {
     position: Position;
+    options: Options;
     buffer: Buffer;
     nesting: number;
   }): Inner | void;
   closeDictionary(options: {
     position: Position;
     optionality: Optionality;
+    options: Options;
     buffer: Buffer;
     nesting: number;
   }): Inner | Buffer | void;
@@ -46,11 +51,14 @@ export interface ReporterDelegate<Buffer, Inner> {
   }): Inner | Buffer | void;
   closeList(options: {
     position: Position;
+    optionality: Optionality;
+    options: Options;
     buffer: Buffer;
     nesting: number;
   }): Inner | void;
   emitPrimitive(options: {
     label: Label<PrimitiveLabel>;
+    options: Options;
     buffer: Buffer;
     nesting: number;
   }): Inner | void;
@@ -60,17 +68,18 @@ export interface Accumulator<Inner> {
   done(): Inner;
 }
 
-export class Reporter<Buffer extends Accumulator<Inner>, Inner> {
-  private stack: Array<ReporterState<Buffer, Inner>> = [];
+export class Reporter<Buffer extends Accumulator<Inner>, Inner, Options> {
+  private stack: Array<ReporterState<Buffer, Inner, Options>> = [];
   private pad = 0;
 
   constructor(
-    StateClass: ReporterStateConstructor<Buffer, Inner>,
-    reporters: ReporterDelegate<Buffer, Inner>,
+    StateClass: ReporterStateConstructor<Buffer, Inner, Options>,
+    reporters: ReporterDelegate<Buffer, Inner, Options>,
+    options: Options,
     private buffer: Buffer
   ) {
     this.stack.push(
-      new StateClass(this.buffer, this.pad, this.stack, reporters)
+      new StateClass(this.buffer, this.pad, options, this.stack, reporters)
     );
   }
 
@@ -78,7 +87,7 @@ export class Reporter<Buffer extends Accumulator<Inner>, Inner> {
     return this.buffer.done();
   }
 
-  get state(): ReporterState<Buffer, Inner> {
+  get state(): ReporterState<Buffer, Inner, Options> {
     assert(this.stack.length > 0, "Cannot get state from an empty stack");
     return this.stack[this.stack.length - 1];
   }
@@ -109,18 +118,18 @@ export class Reporter<Buffer extends Accumulator<Inner>, Inner> {
     }
   }
 
-  startPrimitiveValue(position: Position): void {
+  startPrimitiveValue(position: Position, optionality: Optionality): void {
     ifHasEvent(this.state, "startPrimitiveValue", state => {
-      state.startPrimitiveValue(position);
+      state.startPrimitiveValue(position, optionality);
     });
   }
 
-  endPrimitiveValue(position: Position): void {
+  endPrimitiveValue(position: Position, optionality: Optionality): void {
     let repeat: true | void = true;
 
     while (repeat) {
       repeat = ifHasEvent(this.state, "endPrimitiveValue", state => {
-        return state.endPrimitiveValue(position);
+        return state.endPrimitiveValue(position, optionality);
       });
     }
   }
@@ -131,30 +140,31 @@ export class Reporter<Buffer extends Accumulator<Inner>, Inner> {
     });
   }
 
-  startListValue(position: Position): void {
+  startListValue(position: Position, optionality: Optionality): void {
     ifHasEvent(this.state, "startListValue", state => {
-      state.startListValue(position);
+      state.startListValue(position, optionality);
     });
   }
 
-  endListValue(position: Position): void {
+  endListValue(position: Position, optionality: Optionality): void {
     let repeat: true | void = true;
 
     while (repeat) {
       repeat = ifHasEvent(this.state, "endListValue", state => {
-        return state.endListValue(position);
+        return state.endListValue(position, optionality);
       });
     }
   }
 }
 
-export interface ReporterStateConstructor<Buffer, Inner> {
+export interface ReporterStateConstructor<Buffer, Inner, Options> {
   new (
     buffer: Buffer,
     pad: number,
-    stack: Array<ReporterState<Buffer, Inner>>,
-    reporters: ReporterDelegate<Buffer, Inner>
-  ): ReporterState<Buffer, Inner>;
+    options: Options,
+    stack: Array<ReporterState<Buffer, Inner, Options>>,
+    reporters: ReporterDelegate<Buffer, Inner, Options>
+  ): ReporterState<Buffer, Inner, Options>;
 }
 
 export enum Position {
@@ -165,22 +175,29 @@ export enum Position {
   Only,
   Any
 }
-export abstract class ReporterState<Buffer, Inner> {
+export abstract class ReporterState<Buffer, Inner, Options> {
   constructor(
     protected buffer: Buffer,
     protected nesting: number,
-    private stack: Array<ReporterState<Buffer, Inner>>,
-    protected reporters: ReporterDelegate<Buffer, Inner>
+    protected options: Options,
+    private stack: Array<ReporterState<Buffer, Inner, Options>>,
+    protected reporters: ReporterDelegate<Buffer, Inner, Options>
   ) {}
 
-  getStack(): Array<ReporterState<Buffer, Inner>> {
+  getStack(): Array<ReporterState<Buffer, Inner, Options>> {
     return this.stack;
   }
 
-  push(StateClass: ReporterStateConstructor<Buffer, Inner>): void {
+  push(StateClass: ReporterStateConstructor<Buffer, Inner, Options>): void {
     this.debug(`Pushing ${StateClass.name}`);
     this.stack.push(
-      new StateClass(this.buffer, this.nesting, this.stack, this.reporters)
+      new StateClass(
+        this.buffer,
+        this.nesting,
+        this.options,
+        this.stack,
+        this.reporters
+      )
     );
   }
 
@@ -214,20 +231,20 @@ export abstract class ReporterState<Buffer, Inner> {
   startDictionary?(position: Position): void;
   addKey?(key: string, position: Position, optionality: Optionality): void;
   endDictionary?(position: Position, optionality: Optionality): true | void;
-  startListValue?(position: Position): void;
+  startListValue?(position: Position, optionality: Optionality): void;
   listValue?(
     description: string,
     typescript: string,
     optionality: Optionality
   ): void;
-  endListValue?(position: Position): true | void;
+  endListValue?(position: Position, optionality: Optionality): true | void;
   startTuple?(position: Position): void;
   endTuple?(position: Position): true | void;
   startGeneric?(name: string): void;
   endGeneric?(): true | void;
-  startPrimitiveValue?(position: Position): void;
+  startPrimitiveValue?(position: Position, optionality: Optionality): void;
   primitiveValue?(type: Label): void;
-  endPrimitiveValue?(position: Position): true | void;
+  endPrimitiveValue?(position: Position, optionality: Optionality): true | void;
 
   protected state(): State<Buffer> {
     return {
@@ -240,12 +257,17 @@ export abstract class ReporterState<Buffer, Inner> {
 function ifHasEvent<
   Buffer,
   Inner,
-  K extends keyof ReporterState<Buffer, Inner>,
+  Options,
+  K extends keyof ReporterState<Buffer, Inner, Options>,
   C extends (
-    state: ReporterState<Buffer, Inner> &
-      Required<Pick<ReporterState<Buffer, Inner>, K>>
+    state: ReporterState<Buffer, Inner, Options> &
+      Required<Pick<ReporterState<Buffer, Inner, Options>, K>>
   ) => any
->(state: ReporterState<Buffer, Inner>, name: K, callback: C): ReturnType<C> {
+>(
+  state: ReporterState<Buffer, Inner, Options>,
+  name: K,
+  callback: C
+): ReturnType<C> {
   if (hasEvent(state, name)) {
     state.debug(`Dispatching ${name} for ${state.constructor.name}`);
     return callback(state);
@@ -259,10 +281,15 @@ function ifHasEvent<
   }
 }
 
-function hasEvent<Buffer, Inner, K extends keyof ReporterState<Buffer, Inner>>(
-  state: ReporterState<Buffer, Inner>,
+function hasEvent<
+  Buffer,
+  Inner,
+  Options,
+  K extends keyof ReporterState<Buffer, Inner, Options>
+>(
+  state: ReporterState<Buffer, Inner, Options>,
   key: K
-): state is ReporterState<Buffer, Inner> &
-  Required<Pick<ReporterState<Buffer, Inner>, K>> {
+): state is ReporterState<Buffer, Inner, Options> &
+  Required<Pick<ReporterState<Buffer, Inner, Options>, K>> {
   return key in state && typeof (state as any)[key] === "function";
 }

@@ -10,11 +10,8 @@ export {
   type,
   toPrimitive,
   label,
-  describe,
-  typescript,
-  serialize,
-  toJSON,
-  schemaFormat
+  describe
 } from "./types";
+export * from "./types/describe/formatters";
 import * as types from "./types";
 export { types };

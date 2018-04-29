@@ -2,24 +2,27 @@ import { SchemaReporter } from "./default";
 import { DictionaryLabel, Optionality, StringVisitor } from "./label";
 import { Accumulator, Position, Reporter, ReporterDelegate } from "./reporter";
 
-export type Formatter<Result = string> = (
-  schema: { label: DictionaryLabel }
-) => Result;
+export type Formatter<Options = void, Result = string> = Options extends void
+  ? (schema: Schema) => Result
+  : (schema: Schema, options: Options) => Result;
 
-export interface HasLabel {
+export interface Schema {
+  name: string;
   label: DictionaryLabel;
 }
-export default function formatter<Buffer extends Accumulator<Inner>, Inner>(
-  delegate: ReporterDelegate<Buffer, Inner>,
+
+export default function formatter<Buffer extends Accumulator<string>, Options>(
+  delegate: ReporterDelegate<Buffer, string, Options>,
   BufferClass: { new (): Buffer }
-) {
-  return (schema: HasLabel): Inner => {
-    let reporter = new Reporter<Buffer, Inner>(
+): Formatter<Options, string> {
+  return ((schema: Schema, options?: Options): string => {
+    let reporter = new Reporter<Buffer, string, typeof options>(
       SchemaReporter,
       delegate,
+      options,
       new BufferClass()
     );
-    let visitor = new StringVisitor<Buffer, Inner>(reporter);
+    let visitor = new StringVisitor<Buffer, string, typeof options>(reporter);
 
     return visitor.dictionary(
       {
@@ -28,5 +31,5 @@ export default function formatter<Buffer extends Accumulator<Inner>, Inner>(
       },
       Position.WholeSchema
     );
-  };
+  }) as any;
 }
