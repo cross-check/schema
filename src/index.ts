@@ -8,7 +8,6 @@ export {
   OptionalType,
   primitive,
   type,
-  toPrimitive,
   label,
   describe
 } from "./types";

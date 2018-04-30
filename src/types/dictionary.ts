@@ -1,11 +1,10 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import { Dict, dict, entries, unknown } from "ts-std";
 import { Label, Optionality } from "./label";
-import { AsType, OptionalType, Primitive, Type } from "./type";
-import { Interface } from "./utils";
+import { AsType, OptionalType, PrimitiveType, Type } from "./type";
 
 function buildSchemaValidation(
-  desc: Dict<Primitive>
+  desc: Dict<PrimitiveType>
 ): ValidationBuilder<unknown> {
   let obj = dict<ValidationBuilder<unknown>>();
 
@@ -16,8 +15,8 @@ function buildSchemaValidation(
   return validators.object(obj);
 }
 
-export class PrimitiveDictionary implements Primitive {
-  constructor(private inner: Dict<Primitive>) {}
+export class PrimitiveDictionary implements PrimitiveType {
+  constructor(private inner: Dict<PrimitiveType>) {}
 
   get label(): Label {
     let members = dict<Label>();
@@ -37,23 +36,23 @@ export class PrimitiveDictionary implements Primitive {
   }
 }
 
-export class DictionaryType implements Interface<Type> {
+export class DictionaryType implements Type {
   constructor(private inner: Dict<AsType>) {}
 
   // A dictionary's type is the type of its members
-  get primitiveType(): Primitive {
-    let o = dict<Primitive>();
+  get custom(): PrimitiveType {
+    let o = dict<PrimitiveType>();
 
     for (let [key, value] of entries(this.inner)) {
-      o[key] = value!.asType().primitiveType;
+      o[key] = value!.asType().custom;
     }
 
     return new PrimitiveDictionary(o);
   }
 
   // A dictionary's base type is the base type of the members, with all inner types optional
-  get base(): Primitive {
-    let o = dict<Primitive>();
+  get base(): PrimitiveType {
+    let o = dict<PrimitiveType>();
 
     for (let [key, value] of entries(this.inner)) {
       o[key] = value!.asType().base;

@@ -1,7 +1,7 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import { unknown } from "ts-std";
 import { Label, Optionality } from "./label";
-import { AsType, OptionalType, Primitive, Type } from "./type";
+import { AsType, OptionalType, PrimitiveType, Type, TypeImpl } from "./type";
 import { Interface, maybe } from "./utils";
 
 const isPresentArray = validators.is(
@@ -9,8 +9,8 @@ const isPresentArray = validators.is(
   "present-array"
 );
 
-export class PrimitiveArray implements Primitive {
-  constructor(private itemType: Primitive) {}
+export class PrimitiveArray implements PrimitiveType {
+  constructor(private itemType: PrimitiveType) {}
 
   get label(): Label {
     return {
@@ -30,8 +30,8 @@ export class PrimitiveArray implements Primitive {
 // These classes exist because the concept of a "required array" is a little
 // different from the normal concept of required. Otherwise, we could have
 // used the concrete OptionalType directly.
-export class RequiredPrimitiveArray implements Primitive {
-  constructor(private itemType: Primitive) {}
+export class RequiredPrimitiveArray implements PrimitiveType {
+  constructor(private itemType: PrimitiveType) {}
 
   get label(): Label {
     return {
@@ -51,8 +51,8 @@ export class RequiredPrimitiveArray implements Primitive {
   }
 }
 
-export class OptionalPrimitiveArray implements Primitive {
-  constructor(private itemType: Primitive) {}
+export class OptionalPrimitiveArray implements PrimitiveType {
+  constructor(private itemType: PrimitiveType) {}
 
   get label(): Label {
     return {
@@ -76,20 +76,20 @@ export class OptionalArrayType implements Interface<OptionalType> {
     this.itemType = item.asType();
   }
 
-  required(): Interface<Type> {
-    return new Type(
-      new RequiredPrimitiveArray(this.itemType.primitiveType),
+  required(): Type {
+    return new TypeImpl(
+      new RequiredPrimitiveArray(this.itemType.custom),
       new OptionalPrimitiveArray(this.itemType.base)
     );
   }
 
-  asRequired(): Interface<Type> {
+  asRequired(): Type {
     return this.required();
   }
 
-  asType(): Interface<Type> {
-    return new Type(
-      new OptionalPrimitiveArray(this.itemType.primitiveType),
+  asType(): Type {
+    return new TypeImpl(
+      new OptionalPrimitiveArray(this.itemType.custom),
       new OptionalPrimitiveArray(this.itemType.base)
     );
   }

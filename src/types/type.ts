@@ -18,19 +18,27 @@ export class PrimitiveImpl {
   }
 }
 
-export type Primitive = Interface<PrimitiveImpl>;
+/**
+ * A primitive type provides a validation rule and a label.
+ *
+ * All types, including collection types, are primitive types at their core.
+ */
+export interface PrimitiveType {
+  readonly label: Label;
+  validation(): ValidationBuilder<unknown>;
+}
 
-export function toPrimitive(
+function toPrimitive(
   validation: ValidationBuilder<unknown>,
   typeLabel: TypeLabel
-): Primitive {
+): PrimitiveType {
   return new PrimitiveImpl(validation, {
     type: typeLabel,
     optionality: Optionality.None
   });
 }
 
-export class RequiredPrimitive implements Primitive {
+class RequiredPrimitive implements PrimitiveType {
   label: Label;
 
   constructor(private inner: ValidationBuilder<unknown>, typeLabel: TypeLabel) {
@@ -42,12 +50,16 @@ export class RequiredPrimitive implements Primitive {
   }
 }
 
-export class OptionalPrimitive implements Primitive {
+export interface OptionalPrimitiveType extends PrimitiveType {
+  required(): PrimitiveType;
+}
+
+class OptionalPrimitive implements PrimitiveType {
   static forValidation(v: ValidationBuilder<unknown>, typeLabel: TypeLabel) {
     return new OptionalPrimitive(v, typeLabel);
   }
 
-  static forPrimitive(p: Primitive): OptionalPrimitive {
+  static forPrimitive(p: PrimitiveType): OptionalPrimitive {
     return new OptionalPrimitive(p.validation(), p.label.type);
   }
 
@@ -67,25 +79,33 @@ export class OptionalPrimitive implements Primitive {
     return maybe(this.inner);
   }
 
-  required(): Primitive {
+  required(): PrimitiveType {
     return new RequiredPrimitive(this.inner, this.innerLabel);
   }
 }
 
 export interface AsType {
-  asType(): Interface<Type>;
+  asType(): Type;
 }
 
 export interface AsRequired {
-  asRequired(): Interface<Type>;
+  asRequired(): Type;
 }
 
-export class Type implements AsType, AsRequired {
-  static forPrimitive(p: Primitive): Type {
-    return new Type(p, p);
+export interface Type {
+  custom: PrimitiveType;
+  base: PrimitiveType;
+
+  asType(): Type;
+  asRequired(): Type;
+}
+
+export class TypeImpl implements AsType, AsRequired {
+  static forPrimitive(p: PrimitiveType): Type {
+    return new TypeImpl(p, p);
   }
 
-  constructor(public primitiveType: Primitive, public base: Primitive) {}
+  constructor(public custom: PrimitiveType, public base: PrimitiveType) {}
 
   asType(): Type {
     return this;
@@ -105,19 +125,19 @@ export class OptionalType implements AsType, AsRequired {
     return new OptionalType(p, p);
   }
 
-  static forPrimitive(p: Primitive): OptionalType {
+  static forPrimitive(p: PrimitiveType): OptionalType {
     let optional = OptionalPrimitive.forPrimitive(p);
     return new OptionalType(optional, optional);
   }
 
   static forType(t: Type): OptionalType {
-    let derived = OptionalPrimitive.forPrimitive(t.primitiveType);
+    let derived = OptionalPrimitive.forPrimitive(t.custom);
     let base = OptionalPrimitive.forPrimitive(t.base);
 
     return new OptionalType(derived, base);
   }
 
-  static derived(primitiveType: Primitive, primitiveBase: Primitive) {
+  static derived(primitiveType: PrimitiveType, primitiveBase: PrimitiveType) {
     let derived = OptionalPrimitive.forPrimitive(primitiveType);
     let base = OptionalPrimitive.forPrimitive(primitiveBase);
 
@@ -125,20 +145,20 @@ export class OptionalType implements AsType, AsRequired {
   }
 
   constructor(
-    private derived: Interface<OptionalPrimitive>,
-    private base: Interface<OptionalPrimitive>
+    private derived: OptionalPrimitiveType,
+    private base: OptionalPrimitiveType
   ) {}
 
-  required(): Interface<Type> {
-    return new Type(this.derived.required(), this.base);
+  required(): Type {
+    return new TypeImpl(this.derived.required(), this.base);
   }
 
-  asRequired(): Interface<Type> {
+  asRequired(): Type {
     return this.required();
   }
 
-  asType(): Interface<Type> {
-    return new Type(this.derived, this.base);
+  asType(): Type {
+    return new TypeImpl(this.derived, this.base);
   }
 }
 
@@ -159,7 +179,7 @@ export function type(
 ): () => Interface<OptionalType> {
   let optional = OptionalType.derived(
     toPrimitive(v, label(desc)),
-    base.asType().primitiveType
+    base.asType().custom
   );
   return () => optional;
 }

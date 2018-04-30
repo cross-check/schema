@@ -8,13 +8,13 @@ import build, { ValidationBuilder, validators } from "@cross-check/dsl";
 import { Task } from "no-show";
 import { Dict, dict, entries, unknown } from "ts-std";
 import { DictionaryLabel, Label } from "./types/describe";
-import { AsType, Primitive } from "./types/type";
+import { AsType, PrimitiveType } from "./types/type";
 
 export default class Schema {
   constructor(public name: string, private obj: Dict<AsType>) {}
 
   get draft(): ValidatableSchema {
-    let schema = dict<Primitive>();
+    let schema = dict<PrimitiveType>();
 
     for (let [key, value] of entries(this.obj)) {
       schema[key] = value!.asType().base;
@@ -32,10 +32,10 @@ export default class Schema {
   }
 
   private get narrow(): ValidatableSchema {
-    let schema = dict<Primitive>();
+    let schema = dict<PrimitiveType>();
 
     for (let [key, value] of entries(this.obj)) {
-      schema[key] = value!.asType().primitiveType;
+      schema[key] = value!.asType().custom;
     }
 
     return new ValidatableSchema(schema, this.name);
@@ -45,7 +45,7 @@ export default class Schema {
 export class ValidatableSchema {
   private schemaValidation: ValidationDescriptor;
 
-  constructor(private inner: Dict<Primitive>, readonly name: string) {
+  constructor(private inner: Dict<PrimitiveType>, readonly name: string) {
     this.schemaValidation = buildSchemaValidation(inner);
   }
 
@@ -68,7 +68,7 @@ export class ValidatableSchema {
   }
 }
 
-function buildSchemaValidation(desc: Dict<Primitive>) {
+function buildSchemaValidation(desc: Dict<PrimitiveType>) {
   let obj = dict<ValidationBuilder<unknown>>();
 
   for (let [key, value] of entries(desc)) {
