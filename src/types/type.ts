@@ -1,28 +1,7 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import { unknown } from "ts-std";
-import { Label, Optionality, TypeLabel } from "./label";
+import { Label, LabelOptions, Optionality, TypeLabel, label } from "./label";
 import { Interface, maybe } from "./utils";
-
-export interface LabelOptions {
-  name: string;
-  args?: string[];
-  typescript: string;
-  description?: string;
-}
-
-export function label({
-  name,
-  args,
-  typescript,
-  description
-}: LabelOptions): TypeLabel {
-  return {
-    kind: "primitive",
-    schemaType: { name, args: args || [] },
-    description: description || typescript,
-    typescript
-  };
-}
 
 export class PrimitiveImpl {
   readonly label: Label;

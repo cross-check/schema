@@ -2,18 +2,18 @@
 # yarn lockfile v1
 
 
-"@cross-check/core@^0.8.0":
-  version "0.8.3"
-  resolved "https://registry.yarnpkg.com/@cross-check/core/-/core-0.8.3.tgz#23fcb29f57d95906fe077919ebdf994e50c281ee"
+"@cross-check/core@^0.9.0":
+  version "0.9.0"
+  resolved "https://registry.yarnpkg.com/@cross-check/core/-/core-0.9.0.tgz#6eb81616cc859915644f4cdecfa5688da71d5086"
   dependencies:
     no-show "^0.6.2"
     ts-std "^0.6.2"
 
-"@cross-check/dsl@^0.8.0":
-  version "0.8.1"
-  resolved "https://registry.yarnpkg.com/@cross-check/dsl/-/dsl-0.8.1.tgz#6af8c7f78c43acbba816900b9888a4b21d87eee4"
+"@cross-check/dsl@^0.9.2":
+  version "0.9.2"
+  resolved "https://registry.yarnpkg.com/@cross-check/dsl/-/dsl-0.9.2.tgz#f47686918cc093778c4b2afa02a21785a7e4c733"
   dependencies:
-    "@cross-check/core" "^0.8.0"
+    "@cross-check/core" "^0.9.0"
     no-show "^0.6.2"
     ts-std "^0.6.2"
 
@@ -842,9 +842,9 @@ broccoli-stew@^1.2.0, broccoli-stew@^1.3.3:
     symlink-or-copy "^1.1.8"
     walk-sync "^0.3.0"
 
-broccoli-typescript-compiler@^2.0.0:
+broccoli-typescript-compiler@^2.0.0, "broccoli-typescript-compiler@https://github.com/tildeio/broccoli-typescript-compiler.git":
   version "2.2.0"
-  resolved "https://registry.yarnpkg.com/broccoli-typescript-compiler/-/broccoli-typescript-compiler-2.2.0.tgz#7842f6a20ac802c1d0ac7f89963a251580d0612c"
+  resolved "https://github.com/tildeio/broccoli-typescript-compiler.git#e4b8b1f493280bbbdc3a7dc00841cf54dba54729"
   dependencies:
     array-binsearch "^1.0.1"
     broccoli-funnel "^2.0.1"
@@ -853,7 +853,7 @@ broccoli-typescript-compiler@^2.0.0:
     fs-tree-diff "^0.5.7"
     heimdalljs "0.3.3"
     md5-hex "^2.0.0"
-    typescript "~2.7.1"
+    typescript "~2.8.3"
     walk-sync "^0.3.2"
 
 brorand@^1.0.1:
@@ -5751,13 +5751,13 @@ typedarray@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
 
-typescript@~2.7.1:
-  version "2.7.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.7.2.tgz#2d615a1ef4aee4f574425cdff7026edf81919836"
-
 typescript@~2.8.0:
   version "2.8.1"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.8.1.tgz#6160e4f8f195d5ba81d4876f9c0cc1fbc0820624"
+
+typescript@~2.8.3:
+  version "2.8.3"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.8.3.tgz#5d817f9b6f31bb871835f4edf0089f21abe6c170"
 
 uc.micro@^1.0.1, uc.micro@^1.0.5:
   version "1.0.5"

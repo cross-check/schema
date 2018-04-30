@@ -10,8 +10,7 @@ export {
   OptionalType,
   toPrimitive,
   primitive,
-  type,
-  label
+  type
 } from "./type";
 export { Interface } from "./utils";
 export {
@@ -20,5 +19,6 @@ export {
   schemaFormat,
   serialize,
   toJSON,
-  listTypes
+  listTypes,
+  label
 } from "./describe";

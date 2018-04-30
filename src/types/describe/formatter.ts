@@ -1,6 +1,7 @@
 import { SchemaReporter } from "./default";
-import { DictionaryLabel, Optionality, StringVisitor } from "./label";
+import { DictionaryLabel, Optionality } from "./label";
 import { Accumulator, Position, Reporter, ReporterDelegate } from "./reporter";
+import { StringVisitor } from "./visitor";
 
 export type Formatter<Options = void, Result = string> = Options extends void
   ? (schema: Schema) => Result

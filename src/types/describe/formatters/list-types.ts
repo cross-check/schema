@@ -1,11 +1,7 @@
 import { Dict, unknown } from "ts-std";
 import { Schema } from "../formatter";
-import {
-  DictionaryLabel,
-  RecursiveDelegate,
-  RecursiveVisitor,
-  SchemaType
-} from "../label";
+import { DictionaryLabel, SchemaType } from "../label";
+import { RecursiveDelegate, RecursiveVisitor } from "../visitor";
 
 class ListTypes implements RecursiveDelegate {
   private visitor = new RecursiveVisitor(this);

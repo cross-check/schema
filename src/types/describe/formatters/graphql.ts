@@ -1,7 +1,7 @@
 import { Dict, Option } from "ts-std";
 import formatter, { Schema } from "../formatter";
-import { isRequired } from "../label";
 import { Accumulator, ReporterDelegate } from "../reporter";
+import { isRequired } from "../visitor";
 
 class TypeBuffer {
   private buf: string;
