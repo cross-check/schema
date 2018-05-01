@@ -27,7 +27,7 @@
     "@types/qunit": "^2.0.31",
     "broccoli-typescript-compiler": "https://github.com/tildeio/broccoli-typescript-compiler.git",
     "ember-cli": "^2.18.2",
-    "libkit": "^0.5.19",
+    "libkit": "^0.5.20",
     "prettier": "^1.12.0",
     "qunitjs": "^2.4.0",
     "shelljs": "^0.7.8",
