@@ -1,13 +1,13 @@
 import { ValueValidator, builderFor, validators } from "@cross-check/dsl";
 import { Option, unknown } from "ts-std";
-import { TypeFunction, primitive, type } from "./type";
+import { OptionalType, primitive, type } from "./type";
 
-export const Text: TypeFunction = primitive(validators.isString(), {
+export const Text: () => OptionalType = primitive(validators.isString(), {
   name: "Text",
   typescript: "string"
 });
 
-const Num: TypeFunction = primitive(validators.isNumber(), {
+const Num: () => OptionalType = primitive(validators.isNumber(), {
   name: "Number",
   typescript: "number"
 });
@@ -35,7 +35,7 @@ const isSingleWord = validators.is(
   "string:single-word"
 );
 
-export const SingleLine: TypeFunction = type(
+export const SingleLine: () => OptionalType = type(
   validators.isString().andThen(isSingleLine()),
   {
     name: "SingleLine",
@@ -45,7 +45,7 @@ export const SingleLine: TypeFunction = type(
   Text()
 );
 
-export const SingleWord: TypeFunction = type(
+export const SingleWord: () => OptionalType = type(
   validators.isString().andThen(isSingleWord()),
   {
     name: "SingleWord",
@@ -63,7 +63,7 @@ class AnyValidator extends ValueValidator<unknown, void> {
   }
 }
 
-export const Any: TypeFunction = primitive(builderFor(AnyValidator)(), {
+export const Any: () => OptionalType = primitive(builderFor(AnyValidator)(), {
   name: "Any",
   typescript: "unknown",
   description: "any"

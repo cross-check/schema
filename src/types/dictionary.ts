@@ -1,7 +1,7 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import { Dict, dict, entries, unknown } from "ts-std";
 import { Label, Optionality } from "./label";
-import { AsType, OptionalType, PrimitiveType, Type } from "./type";
+import { AsType, OptionalType, PrimitiveType, Type, optional } from "./type";
 
 function buildSchemaValidation(
   desc: Dict<PrimitiveType>
@@ -71,5 +71,5 @@ export class DictionaryType implements Type {
 }
 
 export function Dictionary(properties: Dict<AsType>): OptionalType {
-  return OptionalType.forType(new DictionaryType(properties));
+  return optional(new DictionaryType(properties));
 }

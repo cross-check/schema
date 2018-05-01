@@ -1,16 +1,22 @@
 import { Dict, dict, entries } from "ts-std";
 import { DictionaryType } from "./dictionary";
-import { AsRequired, OptionalType, Type } from "./type";
+import {
+  AnyType,
+  OptionalType,
+  RequiredType,
+  optional,
+  required as requiredType
+} from "./type";
 
-export function Record(properties: Dict<AsRequired>): OptionalType {
-  return OptionalType.forType(new DictionaryType(required(properties)));
+export function Record(properties: Dict<AnyType>): OptionalType {
+  return optional(new DictionaryType(required(properties)));
 }
 
-function required(properties: Dict<AsRequired>): Dict<Type> {
-  let out = dict<Type>();
+function required(properties: Dict<AnyType>): Dict<RequiredType> {
+  let out = dict<RequiredType>();
 
   for (let [key, value] of entries(properties)) {
-    out[key] = value!.asRequired();
+    out[key] = requiredType(value!);
   }
 
   return out;

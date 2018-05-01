@@ -5,7 +5,7 @@ export { List } from "./array";
 // Note: This is called Dictionary to avoid conflicting wih the builtin Object
 export { Dictionary } from "./dictionary";
 export { Record } from "./record";
-export { TypeFunction, OptionalType, primitive, type } from "./type";
+export { primitive, type } from "./type";
 export { Interface } from "./utils";
 export {
   describe,

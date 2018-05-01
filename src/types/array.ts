@@ -1,8 +1,15 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import { unknown } from "ts-std";
 import { Label, Optionality } from "./label";
-import { AsType, OptionalType, PrimitiveType, Type, TypeImpl } from "./type";
-import { Interface, maybe } from "./utils";
+import {
+  AsType,
+  OptionalType,
+  PrimitiveType,
+  RequiredType,
+  Type,
+  TypeImpl
+} from "./type";
+import { maybe } from "./utils";
 
 const isPresentArray = validators.is(
   (value: unknown[]): value is unknown[] => value.length > 0,
@@ -69,21 +76,22 @@ export class OptionalPrimitiveArray implements PrimitiveType {
   }
 }
 
-export class OptionalArrayType implements Interface<OptionalType> {
+export class OptionalArrayType implements OptionalType {
+  readonly type = "optional";
   private itemType: Type;
 
   constructor(item: AsType) {
     this.itemType = item.asType();
   }
 
-  required(): Type {
+  required(): RequiredType {
     return new TypeImpl(
       new RequiredPrimitiveArray(this.itemType.custom),
       new OptionalPrimitiveArray(this.itemType.base)
     );
   }
 
-  asRequired(): Type {
+  asRequired(): RequiredType {
     return this.required();
   }
 
@@ -95,6 +103,6 @@ export class OptionalArrayType implements Interface<OptionalType> {
   }
 }
 
-export function List(itemType: AsType): Interface<OptionalType> {
+export function List(itemType: AsType): OptionalType {
   return new OptionalArrayType(itemType);
 }

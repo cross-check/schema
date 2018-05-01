@@ -4,8 +4,6 @@ export {
   List,
   Record,
   Interface,
-  TypeFunction,
-  OptionalType,
   primitive,
   type,
   label,
@@ -13,4 +11,5 @@ export {
 } from "./types";
 export * from "./types/describe/formatters";
 import * as types from "./types";
+export * from "./types/type";
 export { types };

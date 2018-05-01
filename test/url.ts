@@ -1,5 +1,5 @@
 import { ValidationBuilder } from "@cross-check/dsl";
-import { Interface, OptionalType, type, types } from "copilot-schema";
+import { OptionalType, type, types } from "copilot-schema";
 import { unknown } from "ts-std";
 import { format } from "./format";
 
@@ -40,7 +40,7 @@ export function url(...details: UrlType[]): ValidationBuilder<unknown> {
     .catch(() => [{ path: [], message: { name: "url", details } }]);
 }
 
-export function Url(...args: UrlType[]): Interface<OptionalType> {
+export function Url(...args: UrlType[]): OptionalType {
   return type(
     url(...args),
     { name: "Url", args, description: "url", typescript: "string" },
