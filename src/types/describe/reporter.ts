@@ -1,5 +1,5 @@
 import { assert } from "ts-std";
-import { Buffer as StringBuffer } from "./buffer";
+// import { Buffer as StringBuffer } from "./buffer";
 import { Label, Optionality, PrimitiveLabel } from "./label";
 
 export interface Reporters<Buffer, Inner, Options> {
@@ -206,7 +206,8 @@ export abstract class ReporterState<Buffer, Inner, Options> {
     this.debug(`Popped ${last!.constructor.name}`);
   }
 
-  debug(operation: string): void {
+  debug(_operation: string): void {
+    /*
     // tslint:disable:no-console
     console.group(`${operation}`);
 
@@ -226,6 +227,7 @@ export abstract class ReporterState<Buffer, Inner, Options> {
 
     console.groupEnd();
     // tslint:enable:no-console
+    */
   }
 
   startDictionary?(position: Position): void;

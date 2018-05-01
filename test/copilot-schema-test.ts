@@ -13,7 +13,7 @@ import {
 import { Task } from "no-show";
 import { Dict, unknown } from "ts-std";
 import { ISODate } from "./support";
-import { Url } from "./url";
+import { Url, urlish } from "./url";
 
 QUnit.module("@cross-check/schema - simple schema");
 
@@ -1095,7 +1095,7 @@ QUnit.test("parsing", assert => {
   );
 
   let date = new Date();
-  let url = new URL("https://example.com/path/to/hello");
+  let url = urlish("https://example.com/path/to/hello");
 
   assert.deepEqual(
     DETAILED.parse({
@@ -1194,7 +1194,7 @@ QUnit.test("serializing", assert => {
   );
 
   let date = new Date();
-  let url = new URL("https://example.com/path/to/hello");
+  let url = urlish("https://example.com/path/to/hello");
 
   assert.deepEqual(
     DETAILED.serialize({

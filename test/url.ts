@@ -47,6 +47,18 @@ export function url(...details: UrlType[]): ValidationBuilder<unknown> {
     .catch(() => [{ path: [], message: { name: "url", details } }]);
 }
 
+export class Urlish {
+  constructor(
+    public protocol: string,
+    public host: string,
+    public pathname: string
+  ) {}
+
+  toString(): string {
+    return `${this.protocol}://${this.host}/${this.pathname}`;
+  }
+}
+
 class UrlPrimitive implements PrimitiveType {
   constructor(private options: UrlType[]) {}
 
@@ -63,13 +75,18 @@ class UrlPrimitive implements PrimitiveType {
     return url(...this.options);
   }
 
-  serialize(input: URL): string {
+  serialize(input: Urlish): string {
     return input.toString();
   }
 
-  parse(input: string): URL {
-    return new URL(input);
+  parse(input: string): Urlish {
+    return urlish(input);
   }
+}
+
+export function urlish(full: string) {
+  let result = full.match(/^(https?):\/\/([^/]*)\/(.*)$/)!;
+  return new Urlish(result[1], result[2], result[3]);
 }
 
 export function Url(...args: UrlType[]): OptionalType {
