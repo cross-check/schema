@@ -1,203 +1,188 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
-import { unknown } from "ts-std";
-import { Label, LabelOptions, Optionality, TypeLabel, label } from "./label";
-import { maybe } from "./utils";
+import { JSON, unknown } from "ts-std";
+import { Label, Optionality } from "./label";
+import { BRAND, isBranded, maybe } from "./utils";
 
 /**
  * @internal
- */
-export class PrimitiveImpl {
-  readonly type = "required";
-  readonly label: Label;
-
-  constructor(
-    private inner: ValidationBuilder<unknown>,
-    primitiveLabel: Label
-  ) {
-    this.label = primitiveLabel;
-  }
-
-  validation(): ValidationBuilder<unknown> {
-    return this.inner;
-  }
-}
-
-/**
+ *
  * A primitive type provides a validation rule and a label.
  *
  * All types, including collection types, are primitive types at their core.
  */
-export interface PrimitiveType {
+export interface PrimitiveType<JS = unknown, Wire = JSON | undefined> {
   readonly label: Label;
   validation(): ValidationBuilder<unknown>;
-}
 
-function toPrimitive(
-  validation: ValidationBuilder<unknown>,
-  typeLabel: TypeLabel
-): PrimitiveType {
-  return new PrimitiveImpl(validation, {
-    type: typeLabel,
-    optionality: Optionality.None
-  });
+  serialize(input: JS): Wire;
+  parse(input: Wire): JS;
 }
 
 class RequiredPrimitive implements RequiredPrimitiveType {
-  readonly type = "required";
-  label: Label;
+  readonly [BRAND] = "RequiredPrimitiveType";
 
-  constructor(private inner: ValidationBuilder<unknown>, typeLabel: TypeLabel) {
-    this.label = { type: typeLabel, optionality: Optionality.Required };
+  constructor(private inner: PrimitiveType) {}
+
+  get label() {
+    return {
+      optionality: Optionality.Required,
+      type: this.inner.label.type
+    };
+  }
+
+  serialize(js: any): any {
+    return this.inner.serialize(js);
+  }
+
+  parse(wire: any): any {
+    return this.inner.parse(wire);
   }
 
   validation(): ValidationBuilder<unknown> {
     // Make sure that we get a presence error first if the inner value is undefined
-    return validators.isPresent().andThen(this.inner);
+    return validators.isPresent().andThen(this.inner.validation());
   }
 }
 
 export interface RequiredPrimitiveType extends PrimitiveType {
-  type: "required";
+  [BRAND]: "RequiredPrimitiveType";
 }
 
 export interface OptionalPrimitiveType extends PrimitiveType {
-  readonly type: "optional";
+  readonly [BRAND]: "OptionalPrimitiveType";
   required(): RequiredPrimitiveType;
 }
 
+function buildOptionalPrimitive(p: PrimitiveType): OptionalPrimitiveType {
+  return new OptionalPrimitive(p);
+}
+
 class OptionalPrimitive implements OptionalPrimitiveType {
-  static forValidation(v: ValidationBuilder<unknown>, typeLabel: TypeLabel) {
-    return new OptionalPrimitive(v, typeLabel);
-  }
+  readonly [BRAND] = "OptionalPrimitiveType";
 
-  static forPrimitive(p: PrimitiveType): OptionalPrimitive {
-    return new OptionalPrimitive(p.validation(), p.label.type);
-  }
+  constructor(private inner: PrimitiveType) {}
 
-  readonly type = "optional";
-  label: Label;
-
-  constructor(
-    private inner: ValidationBuilder<unknown>,
-    private innerLabel: TypeLabel
-  ) {
-    this.label = {
-      type: innerLabel,
-      optionality: Optionality.Optional
+  get label() {
+    return {
+      optionality: Optionality.Optional,
+      type: this.inner.label.type
     };
   }
 
   validation(): ValidationBuilder<unknown> {
-    return maybe(this.inner);
+    return maybe(this.inner.validation());
+  }
+
+  serialize(value: any): any {
+    if (value === null || value === undefined) {
+      return null;
+    } else {
+      return this.inner.serialize(value);
+    }
+  }
+
+  parse(wire: any): any {
+    if (wire === null || wire === undefined) {
+      return null;
+    } else {
+      return this.inner.parse(wire);
+    }
   }
 
   required(): RequiredPrimitiveType {
-    return new RequiredPrimitive(this.inner, this.innerLabel);
+    return new RequiredPrimitive(this.inner);
   }
 }
 
-export interface AsType {
-  asType(): Type;
-}
-
 export function required(primitive: AnyType): RequiredType {
-  if (primitive.type === "optional") {
+  if (isBranded<OptionalType>(primitive, "OptionalType")) {
     return primitive.required();
   } else {
     return primitive;
   }
 }
 
+/* @internal */
 export interface Type {
+  [BRAND]: "Type";
+
   custom: PrimitiveType;
   base: PrimitiveType;
-
-  asType(): Type;
 }
 
 export interface RequiredType {
-  type: "required";
-  custom: PrimitiveType;
-  base: PrimitiveType;
+  [BRAND]: "RequiredType";
 
+  /* @internal */
   asType(): Type;
 }
 
 export interface OptionalType {
-  type: "optional";
-
-  asType(): Type;
+  [BRAND]: "OptionalType";
   required(): RequiredType;
+
+  /* @internal */
+  asType(): Type;
 }
 
 export type AnyType = RequiredType | OptionalType;
 
 /* @internal */
-export class TypeImpl implements AsType, RequiredType {
-  static forPrimitive(p: PrimitiveType): Type {
-    return new TypeImpl(p, p);
-  }
-
-  readonly type = "required";
-
-  constructor(public custom: PrimitiveType, public base: PrimitiveType) {}
-
-  asType(): Type {
-    return this;
-  }
+export function buildRequiredType(
+  custom: PrimitiveType,
+  base: PrimitiveType
+): RequiredType {
+  return {
+    [BRAND]: "RequiredType",
+    asType: () => asType(custom, base)
+  };
 }
 
-export function buildOptional(t: Type): OptionalType {
-  let derived = OptionalPrimitive.forPrimitive(t.custom);
-  let base = OptionalPrimitive.forPrimitive(t.base);
+/* @internal */
+export function asType(custom: PrimitiveType, base: PrimitiveType): Type {
+  return {
+    [BRAND]: "Type",
+    custom,
+    base
+  };
+}
 
-  return new OptionalTypeImpl(derived, base);
+export function buildOptional(t: {
+  custom: PrimitiveType;
+  base: PrimitiveType;
+}): OptionalType {
+  let custom = buildOptionalPrimitive(t.custom);
+  let base = buildOptionalPrimitive(t.base);
+
+  return {
+    [BRAND]: "OptionalType",
+    required(): RequiredType {
+      return buildRequiredType(custom.required(), base);
+    },
+
+    asType(): Type {
+      return asType(custom, base);
+    }
+  };
 }
 
 export { buildOptional as optional };
 
-class OptionalTypeImpl implements AsType, OptionalType {
-  static forPrimitive(p: PrimitiveType): OptionalTypeImpl {
-    let optional = OptionalPrimitive.forPrimitive(p);
-    return new OptionalTypeImpl(optional, optional);
-  }
-
-  readonly type = "optional";
-
-  constructor(
-    private custom: OptionalPrimitiveType,
-    private base: OptionalPrimitiveType
-  ) {}
-
-  required(): RequiredType {
-    return new TypeImpl(this.custom.required(), this.base);
-  }
-
-  asType(): Type {
-    return new TypeImpl(this.custom, this.base);
-  }
-}
-
-function buildPrimitive(
-  v: ValidationBuilder<unknown>,
-  desc: LabelOptions
-): () => OptionalType {
-  let p = OptionalPrimitive.forValidation(v, label(desc));
-  let optional = new OptionalTypeImpl(p, p);
+function newPrimitive(p: PrimitiveType): () => OptionalType {
+  let optional = buildOptional({ custom: p, base: p });
 
   return () => optional;
 }
 
-export { buildPrimitive as primitive };
+export { newPrimitive as primitive };
 
 export function type(
-  v: ValidationBuilder<unknown>,
-  desc: LabelOptions,
+  custom: PrimitiveType,
   baseType: OptionalType
 ): () => OptionalType {
-  let custom = OptionalPrimitive.forPrimitive(toPrimitive(v, label(desc)));
-  let base = OptionalPrimitive.forPrimitive(baseType.asType().custom);
-
-  let optional = new OptionalTypeImpl(custom, base);
+  let optional = buildOptional({
+    custom,
+    base: baseType.required().asType().custom
+  });
   return () => optional;
 }

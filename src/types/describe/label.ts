@@ -49,19 +49,24 @@ export interface LabelOptions {
   args?: string[];
   typescript: string;
   description?: string;
+  optionality?: Optionality;
 }
 
 function buildLabel({
   name,
   args,
   typescript,
-  description
-}: LabelOptions): TypeLabel {
+  description,
+  optionality = Optionality.None
+}: LabelOptions): Label<PrimitiveLabel> {
   return {
-    kind: "primitive",
-    schemaType: { name, args: args || [] },
-    description: description || typescript,
-    typescript
+    optionality,
+    type: {
+      kind: "primitive",
+      schemaType: { name, args: args || [] },
+      description: description || typescript,
+      typescript
+    }
   };
 }
 

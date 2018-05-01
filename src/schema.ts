@@ -6,12 +6,12 @@ import {
 } from "@cross-check/core";
 import build, { ValidationBuilder, validators } from "@cross-check/dsl";
 import { Task } from "no-show";
-import { Dict, dict, entries, unknown } from "ts-std";
+import { Dict, JSONObject, dict, entries, unknown } from "ts-std";
 import { DictionaryLabel, Label } from "./types/describe";
-import { AsType, PrimitiveType } from "./types/type";
+import { AnyType, PrimitiveType } from "./types/type";
 
 export default class Schema {
-  constructor(public name: string, private obj: Dict<AsType>) {}
+  constructor(public name: string, private obj: Dict<AnyType>) {}
 
   get draft(): ValidatableSchema {
     let schema = dict<PrimitiveType>();
@@ -29,6 +29,14 @@ export default class Schema {
 
   validate(obj: Dict<unknown>, env: Environment): Task<ValidationError[]> {
     return this.narrow.validate(obj, env);
+  }
+
+  parse(wire: JSONObject): Dict<unknown> {
+    return this.narrow.parse(wire);
+  }
+
+  serialize(js: Dict<unknown>): JSONObject {
+    return this.narrow.serialize(js);
   }
 
   private get narrow(): ValidatableSchema {
@@ -65,6 +73,26 @@ export class ValidatableSchema {
 
   validation(): ValidationDescriptor {
     return this.schemaValidation;
+  }
+
+  parse(wire: JSONObject): Dict<unknown> {
+    let out: Dict<unknown> = {};
+
+    for (let [key, value] of entries(this.inner)) {
+      out[key] = value!.parse(wire[key]!);
+    }
+
+    return out;
+  }
+
+  serialize(js: Dict<unknown>): JSONObject {
+    let out: JSONObject = {};
+
+    for (let [key, value] of entries(this.inner)) {
+      out[key] = value!.serialize(js[key]);
+    }
+
+    return out;
   }
 }
 

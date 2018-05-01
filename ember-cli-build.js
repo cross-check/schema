@@ -1,5 +1,5 @@
-'use strict';
+"use strict";
 
-module.exports = require('libkit').build({
-  name: 'copilot-schema'
+module.exports = require("libkit").build({
+  name: "@cross-check/schema"
 });

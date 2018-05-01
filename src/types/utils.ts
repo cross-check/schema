@@ -7,6 +7,20 @@ export function callable<T>(Class: { new (): T }): (() => T) {
 
 export type Interface<T> = { [P in keyof T]: T[P] };
 
+export const BRAND = Symbol("BRAND");
+
+interface Branded<Brand extends string = string> {
+  [BRAND]: Brand;
+}
+
+/* @internal */
+export function isBranded<B extends Branded>(
+  value: any,
+  brand: B[typeof BRAND]
+): value is B {
+  return value && typeof value === "object" && value[BRAND] === brand;
+}
+
 export interface Multiple {
   message: {
     name: "multiple";

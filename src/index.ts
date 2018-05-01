@@ -1,6 +1,7 @@
 export { default as Schema } from "./schema";
 export {
   Dictionary,
+  Label,
   List,
   Record,
   Interface,

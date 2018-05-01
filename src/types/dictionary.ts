@@ -1,7 +1,14 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
-import { Dict, dict, entries, unknown } from "ts-std";
+import { Dict, JSONObject, dict, entries, unknown } from "ts-std";
 import { Label, Optionality } from "./label";
-import { AsType, OptionalType, PrimitiveType, Type, optional } from "./type";
+import {
+  AnyType,
+  OptionalType,
+  PrimitiveType,
+  Type,
+  asType,
+  optional
+} from "./type";
 
 function buildSchemaValidation(
   desc: Dict<PrimitiveType>
@@ -31,45 +38,52 @@ export class PrimitiveDictionary implements PrimitiveType {
     };
   }
 
+  serialize(js: Dict<unknown>): JSONObject {
+    let out: JSONObject = {};
+
+    for (let [key, value] of entries(this.inner)) {
+      out[key] = value!.serialize(js[key]);
+    }
+
+    return out;
+  }
+
+  parse(wire: JSONObject): Dict<unknown> {
+    let out: Dict<unknown> = {};
+
+    for (let [key, value] of entries(this.inner)) {
+      out[key] = value!.parse(wire[key]!);
+    }
+
+    return out;
+  }
+
   validation(): ValidationBuilder<unknown> {
     return buildSchemaValidation(this.inner);
   }
 }
 
-export class DictionaryType implements Type {
-  constructor(private inner: Dict<AsType>) {}
+/* @internal */
+export function dictionaryType(inner: Dict<AnyType>): Type {
+  let customDict = dict<PrimitiveType>();
 
-  // A dictionary's type is the type of its members
-  get custom(): PrimitiveType {
-    let o = dict<PrimitiveType>();
-
-    for (let [key, value] of entries(this.inner)) {
-      o[key] = value!.asType().custom;
-    }
-
-    return new PrimitiveDictionary(o);
+  for (let [key, value] of entries(inner)) {
+    customDict[key] = value!.asType().custom;
   }
 
-  // A dictionary's base type is the base type of the members, with all inner types optional
-  get base(): PrimitiveType {
-    let o = dict<PrimitiveType>();
+  let custom = new PrimitiveDictionary(customDict);
 
-    for (let [key, value] of entries(this.inner)) {
-      o[key] = value!.asType().base;
-    }
+  let baseDict = dict<PrimitiveType>();
 
-    return new PrimitiveDictionary(o);
+  for (let [key, value] of entries(inner)) {
+    baseDict[key] = value!.asType().base;
   }
 
-  asRequired(): Type {
-    return this;
-  }
+  let base = new PrimitiveDictionary(baseDict);
 
-  asType(): Type {
-    return this;
-  }
+  return asType(custom, base);
 }
 
-export function Dictionary(properties: Dict<AsType>): OptionalType {
-  return optional(new DictionaryType(properties));
+export function Dictionary(properties: Dict<AnyType>): OptionalType {
+  return optional(dictionaryType(properties));
 }

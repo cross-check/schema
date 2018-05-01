@@ -1,5 +1,5 @@
 import { Dict, dict, entries } from "ts-std";
-import { DictionaryType } from "./dictionary";
+import { dictionaryType } from "./dictionary";
 import {
   AnyType,
   OptionalType,
@@ -9,7 +9,7 @@ import {
 } from "./type";
 
 export function Record(properties: Dict<AnyType>): OptionalType {
-  return optional(new DictionaryType(required(properties)));
+  return optional(dictionaryType(required(properties)));
 }
 
 function required(properties: Dict<AnyType>): Dict<RequiredType> {

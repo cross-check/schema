@@ -9,13 +9,13 @@ import {
   toJSON,
   types,
   typescript
-} from "copilot-schema";
+} from "@cross-check/schema";
 import { Task } from "no-show";
 import { Dict, unknown } from "ts-std";
 import { ISODate } from "./support";
 import { Url } from "./url";
 
-QUnit.module("copilot-schema - simple schema");
+QUnit.module("@cross-check/schema - simple schema");
 
 const SIMPLE = new Schema("simple-article", {
   hed: types.SingleLine().required(),
@@ -96,6 +96,7 @@ QUnit.test("List types", assert => {
 const GRAPHQL_SCALAR_MAP = {
   // Custom scalars
   SingleLine: "SingleLine",
+  SingleWord: "SingleWord",
   ISODate: "ISODate",
   Url: "Url",
 
@@ -255,6 +256,60 @@ QUnit.test("published drafts must be narrow", async assert => {
   );
 });
 
+QUnit.test("parsing", assert => {
+  assert.deepEqual(
+    SIMPLE.parse({
+      hed: "Hello world",
+      body: "The body"
+    }),
+    {
+      hed: "Hello world",
+      dek: null,
+      body: "The body"
+    }
+  );
+
+  assert.deepEqual(
+    SIMPLE.parse({
+      hed: "Hello world",
+      dek: "Hello. Hello world.",
+      body: "The body"
+    }),
+    {
+      hed: "Hello world",
+      dek: "Hello. Hello world.",
+      body: "The body"
+    }
+  );
+});
+
+QUnit.test("serialize", assert => {
+  assert.deepEqual(
+    SIMPLE.serialize({
+      hed: "Hello world",
+      body: "The body"
+    }),
+    {
+      hed: "Hello world",
+      dek: null,
+      body: "The body"
+    }
+  );
+
+  assert.deepEqual(
+    SIMPLE.serialize({
+      hed: "Hello world",
+      dek: "Hello. Hello world.",
+      body: "The body"
+    }),
+    {
+      hed: "Hello world",
+      dek: "Hello. Hello world.",
+      body: "The body"
+    }
+  );
+});
+
 QUnit.test("a valid published draft", async assert => {
   assert.deepEqual(
     await validatePublished(SIMPLE, {
@@ -274,7 +329,7 @@ const ENV = {
   }
 };
 
-QUnit.module("copilot-schema - detailed schema");
+QUnit.module("@cross-check/schema - detailed schema");
 
 const DETAILED = new Schema("medium-article", {
   hed: types.SingleLine().required(),
@@ -286,7 +341,7 @@ const DETAILED = new Schema("medium-article", {
   }),
   issueDate: ISODate(),
   canonicalUrl: Url(),
-  tags: types.List(types.SingleLine()),
+  tags: types.List(types.SingleWord()),
   categories: types.List(types.SingleLine()).required(),
   geo: types.Dictionary({
     lat: types.Integer().required(),
@@ -304,6 +359,7 @@ QUnit.test("List types", assert => {
     "Integer",
     "List",
     "SingleLine",
+    "SingleWord",
     "Text",
     "Url"
   ]);
@@ -336,7 +392,7 @@ QUnit.test("GraphQL", assert => {
       author: MediumArticle_author
       issueDate: ISODate
       canonicalUrl: Url
-      tags: [SingleLine!]
+      tags: [SingleWord!]
       categories: [SingleLine!]!
       geo: MediumArticle_geo
       contributors: [MediumArticle_contributors!]
@@ -365,7 +421,7 @@ QUnit.test("JSON serialized - published", assert => {
     tags: {
       type: "List",
       items: {
-        type: "SingleLine",
+        type: "SingleWord",
         required: true
       },
       required: false
@@ -478,7 +534,7 @@ QUnit.test("pretty printed", assert => {
         },
         issueDate?: <ISO Date>,
         canonicalUrl?: <url>,
-        tags?: list of <single line string>,
+        tags?: list of <single word string>,
         categories: list of <single line string>,
         geo?: {
           lat: <integer>,
@@ -598,7 +654,7 @@ QUnit.test("round trip", assert => {
         }),
         issueDate: ISODate(),
         canonicalUrl: Url(),
-        tags: List(SingleLine()),
+        tags: List(SingleWord()),
         categories: List(SingleLine()),
         geo: Dictionary({
           lat: Integer().required(),
@@ -707,8 +763,6 @@ QUnit.test("published documents", async assert => {
     "if an optional field is present, it must match the schame"
   );
 });
-
-QUnit.dump.maxDepth = 100;
 
 QUnit.test("dates (issueDate)", async assert => {
   assert.deepEqual(
@@ -989,6 +1043,204 @@ QUnit.test("optional lists (tags)", async assert => {
     }),
     [],
     "in drafts, optional lists may be missing"
+  );
+});
+
+QUnit.test("parsing", assert => {
+  assert.deepEqual(
+    DETAILED.parse({
+      hed: "Hello world",
+      body: "The body",
+      categories: ["one category", "two categories"]
+    }),
+    {
+      hed: "Hello world",
+      dek: null,
+      body: "The body",
+      author: null,
+      issueDate: null,
+      canonicalUrl: null,
+      tags: null,
+      categories: ["one category", "two categories"],
+      geo: null,
+      contributors: null
+    }
+  );
+
+  assert.deepEqual(
+    DETAILED.parse({
+      hed: "Hello world",
+      dek: null,
+      body: "The body",
+      author: null,
+      issueDate: null,
+      canonicalUrl: null,
+      tags: null,
+      categories: ["one category", "two categories"],
+      geo: null,
+      contributors: null
+    }),
+    {
+      hed: "Hello world",
+      dek: null,
+      body: "The body",
+      author: null,
+      issueDate: null,
+      canonicalUrl: null,
+      tags: null,
+      categories: ["one category", "two categories"],
+      geo: null,
+      contributors: null
+    }
+  );
+
+  let date = new Date();
+  let url = new URL("https://example.com/path/to/hello");
+
+  assert.deepEqual(
+    DETAILED.parse({
+      hed: "Hello world",
+      dek: "Hello. Hello world.",
+      body: "The body",
+      author: {
+        first: "Christina"
+        // nested missing stuff serializes to nulls
+      },
+      issueDate: date.toISOString(),
+      canonicalUrl: url.toString(),
+      tags: ["one-tag", "two-tag", "red-tag", "blue-tag"],
+      categories: ["one category", "two categories"],
+      geo: {
+        lat: 100,
+        long: 100
+      },
+      contributors: [
+        { first: "Dan" },
+        { last: "Ohara" },
+        { first: "Godfrey", last: "Chan" }
+      ]
+    }),
+    {
+      hed: "Hello world",
+      dek: "Hello. Hello world.",
+      body: "The body",
+      author: {
+        first: "Christina",
+        last: null
+      },
+      issueDate: date,
+      canonicalUrl: url,
+      tags: ["one-tag", "two-tag", "red-tag", "blue-tag"],
+      categories: ["one category", "two categories"],
+      geo: {
+        lat: 100,
+        long: 100
+      },
+      contributors: [
+        { first: "Dan", last: null },
+        { first: null, last: "Ohara" },
+        { first: "Godfrey", last: "Chan" }
+      ]
+    }
+  );
+});
+
+QUnit.test("serializing", assert => {
+  assert.deepEqual(
+    DETAILED.serialize({
+      hed: "Hello world",
+      body: "The body",
+      categories: ["one category", "two categories"]
+    }),
+    {
+      hed: "Hello world",
+      dek: null,
+      body: "The body",
+      author: null,
+      issueDate: null,
+      canonicalUrl: null,
+      tags: null,
+      categories: ["one category", "two categories"],
+      geo: null,
+      contributors: null
+    }
+  );
+
+  assert.deepEqual(
+    DETAILED.serialize({
+      hed: "Hello world",
+      dek: null,
+      body: "The body",
+      author: null,
+      issueDate: null,
+      canonicalUrl: null,
+      tags: null,
+      categories: ["one category", "two categories"],
+      geo: null,
+      contributors: null
+    }),
+    {
+      hed: "Hello world",
+      dek: null,
+      body: "The body",
+      author: null,
+      issueDate: null,
+      canonicalUrl: null,
+      tags: null,
+      categories: ["one category", "two categories"],
+      geo: null,
+      contributors: null
+    }
+  );
+
+  let date = new Date();
+  let url = new URL("https://example.com/path/to/hello");
+
+  assert.deepEqual(
+    DETAILED.serialize({
+      hed: "Hello world",
+      dek: "Hello. Hello world.",
+      body: "The body",
+      author: {
+        first: "Christina"
+        // nested missing stuff serializes to nulls
+      },
+      issueDate: date,
+      canonicalUrl: url,
+      tags: ["one-tag", "two-tag", "red-tag", "blue-tag"],
+      categories: ["one category", "two categories"],
+      geo: {
+        lat: 100,
+        long: 100
+      },
+      contributors: [
+        { first: "Dan" },
+        { last: "Ohara" },
+        { first: "Godfrey", last: "Chan" }
+      ]
+    }),
+    {
+      hed: "Hello world",
+      dek: "Hello. Hello world.",
+      body: "The body",
+      author: {
+        first: "Christina",
+        last: null
+      },
+      issueDate: date.toISOString(),
+      canonicalUrl: url.toString(),
+      tags: ["one-tag", "two-tag", "red-tag", "blue-tag"],
+      categories: ["one category", "two categories"],
+      geo: {
+        lat: 100,
+        long: 100
+      },
+      contributors: [
+        { first: "Dan", last: null },
+        { first: null, last: "Ohara" },
+        { first: "Godfrey", last: "Chan" }
+      ]
+    }
   );
 });
 

@@ -8,6 +8,7 @@ export { Record } from "./record";
 export { primitive, type } from "./type";
 export { Interface } from "./utils";
 export {
+  Label,
   describe,
   typescript,
   schemaFormat,

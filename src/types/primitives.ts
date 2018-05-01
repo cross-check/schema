@@ -1,59 +1,165 @@
-import { ValueValidator, builderFor, validators } from "@cross-check/dsl";
+import {
+  ValidationBuilder,
+  ValueValidator,
+  builderFor,
+  validators
+} from "@cross-check/dsl";
 import { Option, unknown } from "ts-std";
-import { OptionalType, primitive, type } from "./type";
+import { Label, label } from "./describe/label";
+import { OptionalType, PrimitiveType, primitive, type } from "./type";
 
-export const Text: () => OptionalType = primitive(validators.isString(), {
-  name: "Text",
-  typescript: "string"
-});
+class TextPrimitive implements PrimitiveType {
+  get label(): Label {
+    return label({
+      name: "Text",
+      typescript: "string"
+    });
+  }
 
-const Num: () => OptionalType = primitive(validators.isNumber(), {
-  name: "Number",
-  typescript: "number"
-});
+  validation(): ValidationBuilder<unknown> {
+    return validators.isString();
+  }
+
+  serialize(input: string): string {
+    return input;
+  }
+
+  parse(input: string): string {
+    return input;
+  }
+}
+
+export const Text: () => OptionalType = primitive(new TextPrimitive());
+
+class NumberPrimitive implements PrimitiveType {
+  get label(): Label {
+    return label({
+      name: "Number",
+      typescript: "number"
+    });
+  }
+
+  validation(): ValidationBuilder<unknown> {
+    return validators.isNumber();
+  }
+
+  serialize(input: string): string {
+    return input;
+  }
+
+  parse(input: string): string {
+    return input;
+  }
+}
+
+const Num: () => OptionalType = primitive(new NumberPrimitive());
 
 export { Num as Number };
 
-const isInteger = validators.is(
-  (value: number): value is number => Number.isInteger(value),
-  "number:integer"
-);
+class IntegerPrimitive implements PrimitiveType {
+  get label(): Label {
+    return label({
+      name: "Integer",
+      typescript: "number",
+      description: "integer"
+    });
+  }
 
-export const Integer = primitive(validators.isNumber().andThen(isInteger()), {
-  name: "Integer",
-  typescript: "number",
-  description: "integer"
-});
+  validation(): ValidationBuilder<unknown> {
+    return validators
+      .isNumber()
+      .andThen(
+        validators.is(
+          (value: number): value is number => Number.isInteger(value),
+          "number:integer"
+        )()
+      );
+  }
 
-const isSingleLine = validators.is(
-  (value: string): value is string => !/\n/.test(value),
-  "string:single-line"
-);
+  serialize(input: number): number {
+    return input;
+  }
 
-const isSingleWord = validators.is(
-  (value: string): value is string => !/\s/.test(value),
-  "string:single-word"
-);
+  parse(input: number): number {
+    return input;
+  }
+}
+
+export const Integer: () => OptionalType = primitive(new IntegerPrimitive());
+
+class SingleLinePrimitive extends TextPrimitive {
+  get label(): Label {
+    return label({
+      name: "SingleLine",
+      typescript: "string",
+      description: "single line string"
+    });
+  }
+
+  validation(): ValidationBuilder<unknown> {
+    return super
+      .validation()
+      .andThen(
+        validators.is(
+          (value: string): value is string => !/\n/.test(value),
+          "string:single-line"
+        )()
+      );
+  }
+}
 
 export const SingleLine: () => OptionalType = type(
-  validators.isString().andThen(isSingleLine()),
-  {
-    name: "SingleLine",
-    typescript: "string",
-    description: "single line string"
-  },
+  new SingleLinePrimitive(),
   Text()
 );
 
+class SingleWordPrimitive extends TextPrimitive {
+  get label(): Label {
+    return label({
+      name: "SingleWord",
+      description: "single word string",
+      typescript: "string"
+    });
+  }
+
+  validation(): ValidationBuilder<unknown> {
+    return super
+      .validation()
+      .andThen(
+        validators.is(
+          (value: string): value is string => !/\s/.test(value),
+          "string:single-word"
+        )()
+      );
+  }
+}
+
 export const SingleWord: () => OptionalType = type(
-  validators.isString().andThen(isSingleWord()),
-  {
-    name: "SingleWord",
-    typescript: "string",
-    description: "single word string"
-  },
+  new SingleWordPrimitive(),
   Text()
 );
+
+class AnyPrimitive implements PrimitiveType {
+  get label(): Label {
+    return label({
+      name: "Any",
+      typescript: "unknown",
+      description: "any"
+    });
+  }
+
+  validation(): ValidationBuilder<unknown> {
+    return builderFor(AnyValidator)();
+  }
+
+  serialize(input: string): string {
+    return input;
+  }
+
+  parse(input: string): string {
+    return input;
+  }
+}
 
 class AnyValidator extends ValueValidator<unknown, void> {
   static validatorName = "any";
@@ -63,8 +169,4 @@ class AnyValidator extends ValueValidator<unknown, void> {
   }
 }
 
-export const Any: () => OptionalType = primitive(builderFor(AnyValidator)(), {
-  name: "Any",
-  typescript: "unknown",
-  description: "any"
-});
+export const Any = primitive(new AnyPrimitive());

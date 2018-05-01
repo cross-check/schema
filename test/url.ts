@@ -1,5 +1,12 @@
 import { ValidationBuilder } from "@cross-check/dsl";
-import { OptionalType, type, types } from "copilot-schema";
+import {
+  Label,
+  OptionalType,
+  PrimitiveType,
+  label,
+  type,
+  types
+} from "@cross-check/schema";
 import { unknown } from "ts-std";
 import { format } from "./format";
 
@@ -40,10 +47,31 @@ export function url(...details: UrlType[]): ValidationBuilder<unknown> {
     .catch(() => [{ path: [], message: { name: "url", details } }]);
 }
 
+class UrlPrimitive implements PrimitiveType {
+  constructor(private options: UrlType[]) {}
+
+  get label(): Label {
+    return label({
+      name: "Url",
+      args: this.options,
+      description: "url",
+      typescript: "string"
+    });
+  }
+
+  validation(): ValidationBuilder<unknown> {
+    return url(...this.options);
+  }
+
+  serialize(input: URL): string {
+    return input.toString();
+  }
+
+  parse(input: string): URL {
+    return new URL(input);
+  }
+}
+
 export function Url(...args: UrlType[]): OptionalType {
-  return type(
-    url(...args),
-    { name: "Url", args, description: "url", typescript: "string" },
-    types.Text()
-  )();
+  return type(new UrlPrimitive(args), types.Text())();
 }
