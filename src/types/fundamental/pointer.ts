@@ -1,6 +1,7 @@
 import { Label, Optionality, PointerLabel } from "../label";
-import { OptionalRefinedType, RefinedType } from "../refined";
+import { OptionalRefinedType, Type, strictType } from "../refined";
 import { buildOptional } from "../type";
+import { BRAND } from "../utils";
 import { DirectValue } from "./direct-value";
 import { OptionalReferenceImpl, Reference } from "./reference";
 
@@ -9,7 +10,9 @@ export interface Pointer extends Reference {
 }
 
 export class PointerImpl implements Pointer {
-  constructor(private inner: RefinedType<DirectValue>) {}
+  [BRAND]: "Pointer";
+
+  constructor(private inner: Type<DirectValue>) {}
 
   get label(): Label<PointerLabel> {
     return {
@@ -19,7 +22,7 @@ export class PointerImpl implements Pointer {
           name: "hasOne",
           args: []
         },
-        entity: this.inner.strict.label
+        entity: strictType(this.inner).label
       },
       optionality: Optionality.None
     };
@@ -27,7 +30,7 @@ export class PointerImpl implements Pointer {
 }
 
 export function hasOne(
-  entity: RefinedType<DirectValue>
+  entity: Type<DirectValue>
 ): OptionalRefinedType<Reference> {
   let reference = new PointerImpl(entity);
   let optional = new OptionalReferenceImpl(reference);

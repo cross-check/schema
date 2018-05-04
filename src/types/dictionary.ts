@@ -3,7 +3,7 @@ import { Dict, JSONObject, dict, entries, unknown } from "ts-std";
 import { DirectValue } from "./fundamental/direct-value";
 import { Value } from "./fundamental/value";
 import { DictionaryLabel, Label, Optionality } from "./label";
-import { OptionalRefinedType, RefinedType } from "./refined";
+import { OptionalRefinedType, Type, draftType, strictType } from "./refined";
 import { optional } from "./type";
 import { BRAND } from "./utils";
 
@@ -73,13 +73,13 @@ function isDirectValue(type: Value | undefined): type is DirectValue {
 
 /* @internal */
 export function refinedDictionary(
-  inner: Dict<RefinedType>
-): RefinedType<DirectValue> {
+  inner: Dict<Type<DirectValue>>
+): Type<DirectValue> {
   let customDict = dict<Value>();
 
   for (let [key, value] of entries(inner)) {
-    if (isDirectValue(value!.strict)) {
-      customDict[key] = value!.strict;
+    if (isDirectValue(strictType(value!))) {
+      customDict[key] = strictType(value!);
     }
   }
 
@@ -88,20 +88,20 @@ export function refinedDictionary(
   let baseDict = dict<Value>();
 
   for (let [key, value] of entries(inner)) {
-    baseDict[key] = value!.draft;
+    baseDict[key] = draftType(value!);
   }
 
   let draft = new DirectDictionary(baseDict);
 
   return {
-    [BRAND]: "RequiredRefinedType",
+    [BRAND]: "RequiredRefinedType" as "RequiredRefinedType",
     strict,
     draft
   };
 }
 
 export function Dictionary(
-  properties: Dict<RefinedType>
+  properties: Dict<Type<DirectValue>>
 ): OptionalRefinedType<DirectValue> {
   return optional(refinedDictionary(properties));
 }

@@ -5,16 +5,16 @@ import { Dict, JSONObject, dict, entries, unknown } from "ts-std";
 import { DictionaryLabel, Label } from "./types/describe";
 import { PrimitiveDictionary } from "./types/fundamental/dictionary";
 import { Value } from "./types/fundamental/value";
-import { RefinedType } from "./types/refined";
+import { Type, draftType, strictType } from "./types/refined";
 
 export default class Schema {
-  constructor(public name: string, private obj: Dict<RefinedType>) {}
+  constructor(public name: string, private obj: Dict<Type>) {}
 
   get draft(): ValidatableSchema {
     let schema = dict<Value>();
 
     for (let [key, value] of entries(this.obj)) {
-      schema[key] = value!.draft;
+      schema[key] = draftType(value!);
     }
 
     return new ValidatableSchema(schema, this.name);
@@ -40,7 +40,7 @@ export default class Schema {
     let schema = dict<Value>();
 
     for (let [key, value] of entries(this.obj)) {
-      schema[key] = value!.strict;
+      schema[key] = strictType(value!);
     }
 
     return new ValidatableSchema(schema, this.name);

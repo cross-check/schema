@@ -6,8 +6,10 @@ import { Optional } from "./fundamental/nullable";
 import { Value } from "./fundamental/value";
 import {
   OptionalRefinedType,
-  RefinedType,
-  RequiredRefinedType
+  RequiredRefinedType,
+  Type,
+  draftType,
+  strictType
 } from "./refined";
 import { BRAND, isBranded } from "./utils";
 
@@ -40,7 +42,7 @@ import { BRAND, isBranded } from "./utils";
  */
 
 export function requiredType<Inner extends Value>(
-  primitive: RefinedType<Inner>
+  primitive: Type<Inner>
 ): RequiredRefinedType<Inner> {
   if (isBranded<OptionalRefinedType<Inner>>(primitive, "OptionalRefinedType")) {
     return primitive.required();
@@ -62,10 +64,10 @@ export function buildRequiredType<Inner extends Value>(
 }
 
 export function buildOptionalValue(
-  t: RefinedType<DirectValue>
+  t: Type<DirectValue>
 ): OptionalRefinedType<DirectValue> {
-  let strict = new OptionalDirectValueImpl(t.strict);
-  let draft = new OptionalDirectValueImpl(t.draft);
+  let strict = new OptionalDirectValueImpl(strictType(t));
+  let draft = new OptionalDirectValueImpl(draftType(t));
 
   return buildOptional({ strict, draft });
 }
@@ -92,7 +94,7 @@ export { buildOptionalValue as optional };
 
 function newValue(p: DirectValue): () => OptionalRefinedType<DirectValue> {
   let optional = buildOptionalValue({
-    [BRAND]: "RequiredRefinedType",
+    [BRAND]: "RequiredRefinedType" as "RequiredRefinedType",
     strict: p,
     draft: p
   });
@@ -107,7 +109,7 @@ export function customPrimitive(
   draft: OptionalRefinedType<DirectValue>
 ): () => OptionalRefinedType<DirectValue> {
   let optional = buildOptionalValue({
-    [BRAND]: "RequiredRefinedType",
+    [BRAND]: "RequiredRefinedType" as "RequiredRefinedType",
     strict,
     draft: draft.required().strict
   });

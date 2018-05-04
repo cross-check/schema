@@ -1,7 +1,9 @@
 import { Label, ReferenceLabel, optionalLabel } from "../label";
+import { BRAND } from "../utils";
 import { OptionalImpl, Required, RequiredImpl } from "./nullable";
 
 export interface Reference {
+  [BRAND]: any;
   readonly label: Label<ReferenceLabel>;
 }
 

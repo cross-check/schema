@@ -1,7 +1,7 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import { Dict, JSONObject, dict, entries, unknown } from "ts-std";
 import { DictionaryLabel, Label, Optionality } from "../label";
-import { OptionalRefinedType, RefinedType } from "../refined";
+import { OptionalRefinedType, Type, draftType, strictType } from "../refined";
 import { optional } from "../type";
 import { BRAND } from "../utils";
 import { DirectValue } from "./direct-value";
@@ -72,14 +72,12 @@ function isDirectValue(type: Value | undefined): type is DirectValue {
 }
 
 /* @internal */
-export function dictionaryType(
-  inner: Dict<RefinedType>
-): RefinedType<DirectValue> {
+export function dictionaryType(inner: Dict<Type>): Type<DirectValue> {
   let customDict = dict<Value>();
 
   for (let [key, value] of entries(inner)) {
-    if (isDirectValue(value!.strict)) {
-      customDict[key] = value!.strict;
+    if (isDirectValue(strictType(value!))) {
+      customDict[key] = strictType(value!);
     }
   }
 
@@ -88,20 +86,20 @@ export function dictionaryType(
   let baseDict = dict<Value>();
 
   for (let [key, value] of entries(inner)) {
-    baseDict[key] = value!.draft;
+    baseDict[key] = draftType(value!);
   }
 
   let draft = new PrimitiveDictionary(baseDict);
 
   return {
-    [BRAND]: "RequiredRefinedType",
+    [BRAND]: "RequiredRefinedType" as "RequiredRefinedType",
     strict,
     draft
   };
 }
 
 export function Dictionary(
-  properties: Dict<RefinedType>
+  properties: Dict<Type<DirectValue>>
 ): OptionalRefinedType<DirectValue> {
   return optional(dictionaryType(properties));
 }

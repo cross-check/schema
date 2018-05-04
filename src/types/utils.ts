@@ -9,7 +9,7 @@ export type Interface<T> = { [P in keyof T]: T[P] };
 
 export const BRAND = Symbol("BRAND");
 
-interface Branded<Brand extends string = string> {
+export interface Branded<Brand extends string = string> {
   [BRAND]: Brand;
 }
 

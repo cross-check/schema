@@ -3,8 +3,10 @@ import { unknown } from "ts-std";
 import { Label, Optionality } from "../label";
 import {
   OptionalRefinedType,
-  RefinedType,
-  RequiredRefinedType
+  RequiredRefinedType,
+  Type,
+  draftType,
+  strictType
 } from "../refined";
 import { buildRequiredType } from "../type";
 import { BRAND } from "../utils";
@@ -62,14 +64,14 @@ class PrimitiveArrayType implements OptionalRefinedType<PrimitiveArray> {
   readonly strict: Optional<PrimitiveArray> & PrimitiveArray;
   readonly draft: Optional<PrimitiveArray> & PrimitiveArray;
 
-  constructor(private item: RefinedType<PrimitiveArray>) {
-    this.strict = new OptionalDirectValueImpl(item.strict);
-    this.draft = new OptionalDirectValueImpl(item.draft);
+  constructor(private item: Type<PrimitiveArray>) {
+    this.strict = new OptionalDirectValueImpl(strictType(item));
+    this.draft = new OptionalDirectValueImpl(draftType(item));
   }
 
   required(): RequiredRefinedType<PrimitiveArray> {
     return buildRequiredType<PrimitiveArray>(
-      new RequiredPrimitiveArray(this.item.strict),
+      new RequiredPrimitiveArray(strictType(this.item)),
       this.draft
     );
   }
@@ -82,13 +84,13 @@ class RequiredPrimitiveArray extends RequiredDirectValueImpl {
 }
 
 export function List(
-  item: RefinedType<DirectValue>
+  item: Type<DirectValue>
 ): OptionalRefinedType<PrimitiveArray> {
-  let strict = new PrimitiveArrayImpl(item.strict);
-  let draft = new PrimitiveArrayImpl(item.draft);
+  let strict = new PrimitiveArrayImpl(strictType(item));
+  let draft = new PrimitiveArrayImpl(draftType(item));
 
   return new PrimitiveArrayType({
-    [BRAND]: "RequiredRefinedType",
+    [BRAND]: "RequiredRefinedType" as "RequiredRefinedType",
     strict,
     draft
   });
