@@ -1,5 +1,11 @@
 import { Buffer as StringBuffer } from "./buffer";
-import { Label, Optionality, PrimitiveLabel } from "./label";
+import {
+  Label,
+  NamedLabel,
+  Optionality,
+  PointerLabel,
+  PrimitiveLabel
+} from "./label";
 import { Position, ReporterState } from "./reporter";
 
 function pushStrings<Buffer, Inner>(value: Inner | void, buffer: Buffer): void {
@@ -127,6 +133,50 @@ export class StructureReporter<Buffer, Inner, Options> extends ReporterState<
   }
 
   /**
+   * The current value was a reference, and it is done.
+   *
+   * Stack:
+   *   ..., Structure ->
+   *   ..., Structure
+   * Calls:
+   *   structure#closeValue
+   */
+  endReferenceValue(position: Position, label: Label<PointerLabel>): void {
+    pushStrings(
+      this.reporters.closeValue({
+        position,
+        optionality: label.optionality,
+        options: this.options,
+        nesting: this.nesting,
+        buffer: this.buffer
+      }),
+      this.buffer
+    );
+  }
+
+  /**
+   * The current value was a reference, and it is done.
+   *
+   * Stack:
+   *   ..., Structure ->
+   *   ..., Structure
+   * Calls:
+   *   structure#closeValue
+   */
+  endNamedValue(position: Position, optionality: Optionality): void {
+    pushStrings(
+      this.reporters.closeValue({
+        position,
+        optionality,
+        options: this.options,
+        nesting: this.nesting,
+        buffer: this.buffer
+      }),
+      this.buffer
+    );
+  }
+
+  /**
    * The current value was a primitive, and it is done.
    *
    * Stack:
@@ -200,17 +250,17 @@ export class StructureReporter<Buffer, Inner, Options> extends ReporterState<
   }
 }
 
-export class ListReporter<Buffer, Inner, Options> extends ReporterState<
+export class GenericReporter<Buffer, Inner, Options> extends ReporterState<
   Buffer,
   Inner,
   Options
 > {
   /**
-   * The list contains a primitive value.
+   * The generic contains a primitive value.
    *
    * Stack:
-   *   ..., List ->
-   *   ..., List, Value
+   *   ..., Generic ->
+   *   ..., Generic, Value
    * Calls:
    *   None
    */
@@ -218,12 +268,16 @@ export class ListReporter<Buffer, Inner, Options> extends ReporterState<
     this.push(ValueReporter);
   }
 
+  startNamedValue(): void {
+    this.push(ValueReporter);
+  }
+
   /**
-   * The list contains a dictionary.
+   * The generic contains a dictionary.
    *
    * Stack:
-   *   ..., List ->
-   *   ..., List, Structure (and repeat)
+   *   ..., Generic ->
+   *   ..., Generic, Structure (and repeat)
    * Calls:
    *   None
    */
@@ -233,10 +287,10 @@ export class ListReporter<Buffer, Inner, Options> extends ReporterState<
   }
 
   /**
-   * The list contains a dictionary.
+   * The generic contains a dictionary.
    *
    * Stack:
-   *   ..., Value, List ->
+   *   ..., Value, Generic ->
    *   ..., Value (and repeat)
    * Calls:
    *   None
@@ -252,7 +306,7 @@ export class ListReporter<Buffer, Inner, Options> extends ReporterState<
    *   ..., Value, List ->
    *   ..., Value (and repeat)
    * Calls:
-   *   list#closeList
+   *   generic#closeList
    */
   endListValue(position: Position, optionality: Optionality): true {
     pushStrings(
@@ -266,6 +320,27 @@ export class ListReporter<Buffer, Inner, Options> extends ReporterState<
       this.buffer
     );
 
+    this.pop();
+    assertTop(this.getStack(), ValueReporter);
+    return true;
+  }
+
+  endReferenceValue(): true {
+    this.pop();
+    assertTop(this.getStack(), ValueReporter);
+    return true;
+  }
+
+  /**
+   * The named value has finished.
+   *
+   * Stack:
+   *   ..., Value, List ->
+   *   ..., Value (and repeat)
+   * Calls:
+   *   generic#closeList
+   */
+  endNamedValue(): true {
     this.pop();
     assertTop(this.getStack(), ValueReporter);
     return true;
@@ -383,7 +458,7 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
       }),
       this.buffer
     );
-    this.push(ListReporter);
+    this.push(GenericReporter);
   }
 
   /**
@@ -397,9 +472,87 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    */
   endListValue(): true {
     this.pop();
-    assertTop(this.getStack(), ListReporter, StructureReporter);
+    assertTop(this.getStack(), GenericReporter, StructureReporter);
 
     return true;
+  }
+
+  /**
+   * The value is a Reference.
+   *
+   * Stack:
+   *   ..., Value ->
+   *   ..., Value
+   * Calls:
+   *   value#openReference
+   */
+  startReferenceValue(position: Position, label: Label<PointerLabel>): void {
+    pushStrings(
+      this.reporters.openReference({
+        position,
+        label,
+        options: this.options,
+        nesting: this.nesting,
+        buffer: this.buffer
+      }),
+      this.buffer
+    );
+    this.push(GenericReporter);
+  }
+
+  /**
+   * The value was a reference and is done.
+   *
+   * Stack:
+   *   ..., Structure, Value ->
+   *   ..., Structure (and repeat)
+   * Calls:
+   *   None
+   */
+  endReferenceValue(): true {
+    this.pop();
+    assertTop(this.getStack(), StructureReporter);
+
+    return true;
+  }
+
+  /**
+   * The value is a Named Type.
+   *
+   * Stack:
+   *   ..., Value ->
+   *   ..., Value
+   * Calls:
+   *   None
+   */
+  startNamedValue(): void {
+    /* noop */
+  }
+
+  /**
+   * The value was a named value.
+   *
+   * Stack:
+   *   ..., Structure, Value ->
+   *   ..., Structure (and repeat)
+   * Calls:
+   *   None
+   */
+  endNamedValue(): void {
+    this.pop();
+    assertTop(this.getStack(), StructureReporter, GenericReporter);
+  }
+
+  namedValue(label: NamedLabel): void {
+    pushStrings(
+      this.reporters.emitNamedType({
+        label,
+        options: this.options,
+        buffer: this.buffer,
+        nesting: this.nesting
+      }),
+      this.buffer
+    );
   }
 
   /**

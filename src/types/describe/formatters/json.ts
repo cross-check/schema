@@ -1,6 +1,6 @@
 import { Dict, unknown } from "ts-std";
 import { Schema } from "../formatter";
-import { DictionaryLabel, SchemaType } from "../label";
+import { DictionaryLabel, NamedLabel, SchemaType } from "../label";
 import { RecursiveDelegate, RecursiveVisitor } from "../visitor";
 
 interface Primitive {
@@ -15,6 +15,12 @@ interface List {
   required: boolean;
 }
 
+interface Pointer {
+  type: "Pointer";
+  entity: Item;
+  required: boolean;
+}
+
 interface Dictionary {
   type: "Dictionary";
   members: Dict<Item>;
@@ -24,7 +30,7 @@ interface Dictionary {
 type Item = List | Primitive | Dictionary;
 
 class JSONFormatter implements RecursiveDelegate {
-  private visitor = new RecursiveVisitor(this);
+  private visitor = RecursiveVisitor.build(this);
 
   schema(label: DictionaryLabel): Dict<Item> {
     let members = {} as Dict<Item>;
@@ -42,6 +48,22 @@ class JSONFormatter implements RecursiveDelegate {
     } else {
       return { type, required };
     }
+  }
+
+  named(label: NamedLabel, required: boolean): unknown {
+    return {
+      type: label.type,
+      name: label.name,
+      required
+    };
+  }
+
+  pointer(entity: Item, required: boolean): Pointer {
+    return {
+      type: "Pointer",
+      entity,
+      required
+    };
   }
 
   list(item: Item, required: boolean): List {
@@ -62,5 +84,5 @@ class JSONFormatter implements RecursiveDelegate {
 }
 
 export function toJSON(schema: Schema): unknown {
-  return new JSONFormatter().schema(schema.label);
+  return new JSONFormatter().schema(schema.label.type);
 }

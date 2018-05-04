@@ -1,188 +1,116 @@
-import { ValidationBuilder, validators } from "@cross-check/dsl";
-import { JSON, unknown } from "ts-std";
-import { Label, Optionality } from "./label";
-import { BRAND, isBranded, maybe } from "./utils";
+import {
+  DirectValue,
+  OptionalDirectValueImpl
+} from "./fundamental/direct-value";
+import { Optional } from "./fundamental/nullable";
+import { Value } from "./fundamental/value";
+import {
+  OptionalRefinedType,
+  RefinedType,
+  RequiredRefinedType
+} from "./refined";
+import { BRAND, isBranded } from "./utils";
 
 /**
- * @internal
+ * Internals Vocabulary:
  *
- * A primitive type provides a validation rule and a label.
+ * Reference:
+ *   Represents data that is not directly included in the parent object.
+ *   Dereferencing a reference may be asynchronous.
  *
- * All types, including collection types, are primitive types at their core.
+ * Direct Value:
+ *   Represent data that is directly included in the parent object.
+ *   They include scalars, lists and dictionaries.
+ *
+ * Scalar (Value):
+ *   A single value.
+ *
+ * List (Value):
+ *   A list of values.
+ *
+ * Dictionary (Value):
+ *   A set of key-value pairs. A dictionary's values are Values.A dictionary's keys are strings.
+ *
+ * Pointer (Reference):
+ *   A reference to a value.
+ *
+ * Iterator (Reference):
+ *   A reference to a sequence of values. Each iteration of an iterator may be asynchronous.
+ *
  */
-export interface PrimitiveType<JS = unknown, Wire = JSON | undefined> {
-  readonly label: Label;
-  validation(): ValidationBuilder<unknown>;
 
-  serialize(input: JS): Wire;
-  parse(input: Wire): JS;
-}
-
-class RequiredPrimitive implements RequiredPrimitiveType {
-  readonly [BRAND] = "RequiredPrimitiveType";
-
-  constructor(private inner: PrimitiveType) {}
-
-  get label() {
-    return {
-      optionality: Optionality.Required,
-      type: this.inner.label.type
-    };
-  }
-
-  serialize(js: any): any {
-    return this.inner.serialize(js);
-  }
-
-  parse(wire: any): any {
-    return this.inner.parse(wire);
-  }
-
-  validation(): ValidationBuilder<unknown> {
-    // Make sure that we get a presence error first if the inner value is undefined
-    return validators.isPresent().andThen(this.inner.validation());
-  }
-}
-
-export interface RequiredPrimitiveType extends PrimitiveType {
-  [BRAND]: "RequiredPrimitiveType";
-}
-
-export interface OptionalPrimitiveType extends PrimitiveType {
-  readonly [BRAND]: "OptionalPrimitiveType";
-  required(): RequiredPrimitiveType;
-}
-
-function buildOptionalPrimitive(p: PrimitiveType): OptionalPrimitiveType {
-  return new OptionalPrimitive(p);
-}
-
-class OptionalPrimitive implements OptionalPrimitiveType {
-  readonly [BRAND] = "OptionalPrimitiveType";
-
-  constructor(private inner: PrimitiveType) {}
-
-  get label() {
-    return {
-      optionality: Optionality.Optional,
-      type: this.inner.label.type
-    };
-  }
-
-  validation(): ValidationBuilder<unknown> {
-    return maybe(this.inner.validation());
-  }
-
-  serialize(value: any): any {
-    if (value === null || value === undefined) {
-      return null;
-    } else {
-      return this.inner.serialize(value);
-    }
-  }
-
-  parse(wire: any): any {
-    if (wire === null || wire === undefined) {
-      return null;
-    } else {
-      return this.inner.parse(wire);
-    }
-  }
-
-  required(): RequiredPrimitiveType {
-    return new RequiredPrimitive(this.inner);
-  }
-}
-
-export function required(primitive: AnyType): RequiredType {
-  if (isBranded<OptionalType>(primitive, "OptionalType")) {
+export function requiredType<Inner extends Value>(
+  primitive: RefinedType<Inner>
+): RequiredRefinedType<Inner> {
+  if (isBranded<OptionalRefinedType<Inner>>(primitive, "OptionalRefinedType")) {
     return primitive.required();
   } else {
-    return primitive;
+    return primitive as RequiredRefinedType<Inner>;
   }
 }
 
 /* @internal */
-export interface Type {
-  [BRAND]: "Type";
-
-  custom: PrimitiveType;
-  base: PrimitiveType;
-}
-
-export interface RequiredType {
-  [BRAND]: "RequiredType";
-
-  /* @internal */
-  asType(): Type;
-}
-
-export interface OptionalType {
-  [BRAND]: "OptionalType";
-  required(): RequiredType;
-
-  /* @internal */
-  asType(): Type;
-}
-
-export type AnyType = RequiredType | OptionalType;
-
-/* @internal */
-export function buildRequiredType(
-  custom: PrimitiveType,
-  base: PrimitiveType
-): RequiredType {
+export function buildRequiredType<Inner extends Value>(
+  strict: Inner,
+  draft: Inner
+): RequiredRefinedType<Inner> {
   return {
-    [BRAND]: "RequiredType",
-    asType: () => asType(custom, base)
+    [BRAND]: "RequiredRefinedType",
+    strict,
+    draft
   };
 }
 
-/* @internal */
-export function asType(custom: PrimitiveType, base: PrimitiveType): Type {
-  return {
-    [BRAND]: "Type",
-    custom,
-    base
-  };
+export function buildOptionalValue(
+  t: RefinedType<DirectValue>
+): OptionalRefinedType<DirectValue> {
+  let strict = new OptionalDirectValueImpl(t.strict);
+  let draft = new OptionalDirectValueImpl(t.draft);
+
+  return buildOptional({ strict, draft });
 }
 
-export function buildOptional(t: {
-  custom: PrimitiveType;
-  base: PrimitiveType;
-}): OptionalType {
-  let custom = buildOptionalPrimitive(t.custom);
-  let base = buildOptionalPrimitive(t.base);
-
+export function buildOptional<Inner extends Value>({
+  strict,
+  draft
+}: {
+  strict: Optional<Inner> & Inner;
+  draft: Optional<Inner> & Inner;
+}): OptionalRefinedType<Inner> {
   return {
-    [BRAND]: "OptionalType",
-    required(): RequiredType {
-      return buildRequiredType(custom.required(), base);
+    [BRAND]: "OptionalRefinedType",
+    required() {
+      return buildRequiredType<Inner>(strict.required(), draft);
     },
 
-    asType(): Type {
-      return asType(custom, base);
-    }
+    strict,
+    draft
   };
 }
 
-export { buildOptional as optional };
+export { buildOptionalValue as optional };
 
-function newPrimitive(p: PrimitiveType): () => OptionalType {
-  let optional = buildOptional({ custom: p, base: p });
+function newValue(p: DirectValue): () => OptionalRefinedType<DirectValue> {
+  let optional = buildOptionalValue({
+    [BRAND]: "RequiredRefinedType",
+    strict: p,
+    draft: p
+  });
 
   return () => optional;
 }
 
-export { newPrimitive as primitive };
+export { newValue as primitive };
 
-export function type(
-  custom: PrimitiveType,
-  baseType: OptionalType
-): () => OptionalType {
-  let optional = buildOptional({
-    custom,
-    base: baseType.required().asType().custom
+export function customPrimitive(
+  strict: DirectValue,
+  draft: OptionalRefinedType<DirectValue>
+): () => OptionalRefinedType<DirectValue> {
+  let optional = buildOptionalValue({
+    [BRAND]: "RequiredRefinedType",
+    strict,
+    draft: draft.required().strict
   });
+
   return () => optional;
 }

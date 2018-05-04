@@ -11,16 +11,29 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     return `}`;
   },
 
+  openDictionary(): string {
+    return `Dictionary({\n`;
+  },
   emitKey({ key, nesting }): string {
     return `${pad(nesting * 2)}${key}: `;
   },
-
   closeDictionary({ buffer, nesting, optionality }): string | void {
     buffer.push(`${pad(nesting * 2)}})`);
 
     if (optionality === Optionality.Required) {
       buffer.push(".required()");
     }
+  },
+
+  openReference({ buffer }): void {
+    buffer.push("hasOne(");
+  },
+  closeReference({ buffer }): void {
+    buffer.push(")");
+  },
+
+  emitNamedType({ label, buffer }): void {
+    buffer.push(`${label.name}`);
   },
 
   closeValue({ position }): string | void {
@@ -31,16 +44,13 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     }
   },
 
+  openList(): string {
+    return "List(";
+  },
   closeList(): string {
     return ")";
   },
 
-  openDictionary(): string {
-    return `Dictionary({\n`;
-  },
-  openList(): string {
-    return "List(";
-  },
   emitPrimitive({ label }): string {
     return formatType(label);
   }

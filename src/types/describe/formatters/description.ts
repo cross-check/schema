@@ -26,6 +26,14 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     }
   },
 
+  openReference() {
+    return `has one `;
+  },
+
+  closeReference() {
+    /* noop */
+  },
+
   closeList(): void {
     /* noop */
   },
@@ -38,6 +46,9 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
   },
   emitPrimitive({ label }): string {
     return `<${label.type.description}>`;
+  },
+  emitNamedType({ label }): string {
+    return `${label.name}`;
   }
 };
 

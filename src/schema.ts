@@ -1,107 +1,65 @@
-import {
-  Environment,
-  ValidationDescriptor,
-  ValidationError,
-  validate
-} from "@cross-check/core";
-import build, { ValidationBuilder, validators } from "@cross-check/dsl";
+import { Environment, ValidationError, validate } from "@cross-check/core";
+import build from "@cross-check/dsl";
 import { Task } from "no-show";
 import { Dict, JSONObject, dict, entries, unknown } from "ts-std";
 import { DictionaryLabel, Label } from "./types/describe";
-import { AnyType, PrimitiveType } from "./types/type";
+import { PrimitiveDictionary } from "./types/fundamental/dictionary";
+import { Value } from "./types/fundamental/value";
+import { RefinedType } from "./types/refined";
 
 export default class Schema {
-  constructor(public name: string, private obj: Dict<AnyType>) {}
+  constructor(public name: string, private obj: Dict<RefinedType>) {}
 
   get draft(): ValidatableSchema {
-    let schema = dict<PrimitiveType>();
+    let schema = dict<Value>();
 
     for (let [key, value] of entries(this.obj)) {
-      schema[key] = value!.asType().base;
+      schema[key] = value!.draft;
     }
 
     return new ValidatableSchema(schema, this.name);
   }
 
-  get label(): DictionaryLabel {
-    return this.narrow.label;
+  get label(): Label<DictionaryLabel> {
+    return this.custom.label;
   }
 
   validate(obj: Dict<unknown>, env: Environment): Task<ValidationError[]> {
-    return this.narrow.validate(obj, env);
+    return this.custom.validate(obj, env);
   }
 
   parse(wire: JSONObject): Dict<unknown> {
-    return this.narrow.parse(wire);
+    return this.custom.parse(wire);
   }
 
   serialize(js: Dict<unknown>): JSONObject {
-    return this.narrow.serialize(js);
+    return this.custom.serialize(js);
   }
 
-  private get narrow(): ValidatableSchema {
-    let schema = dict<PrimitiveType>();
+  get custom(): ValidatableSchema {
+    let schema = dict<Value>();
 
     for (let [key, value] of entries(this.obj)) {
-      schema[key] = value!.asType().custom;
+      schema[key] = value!.strict;
     }
 
     return new ValidatableSchema(schema, this.name);
   }
 }
 
-export class ValidatableSchema {
-  private schemaValidation: ValidationDescriptor;
-
-  constructor(private inner: Dict<PrimitiveType>, readonly name: string) {
-    this.schemaValidation = buildSchemaValidation(inner);
+export class ValidatableSchema extends PrimitiveDictionary {
+  constructor(inner: Dict<Value>, readonly name: string) {
+    super(inner);
   }
 
-  get label(): DictionaryLabel {
-    let members = dict<Label>();
-
-    for (let [key, value] of entries(this.inner)) {
-      members[key] = value!.label;
-    }
-
-    return { kind: "dictionary", members };
+  get label(): Label<DictionaryLabel> {
+    return {
+      ...super.label,
+      name: this.name
+    };
   }
 
   validate(obj: Dict<unknown>, env: Environment): Task<ValidationError[]> {
-    return validate(obj, this.validation(), null, env);
+    return validate(obj, build(this.validation()), null, env);
   }
-
-  validation(): ValidationDescriptor {
-    return this.schemaValidation;
-  }
-
-  parse(wire: JSONObject): Dict<unknown> {
-    let out: Dict<unknown> = {};
-
-    for (let [key, value] of entries(this.inner)) {
-      out[key] = value!.parse(wire[key]!);
-    }
-
-    return out;
-  }
-
-  serialize(js: Dict<unknown>): JSONObject {
-    let out: JSONObject = {};
-
-    for (let [key, value] of entries(this.inner)) {
-      out[key] = value!.serialize(js[key]);
-    }
-
-    return out;
-  }
-}
-
-function buildSchemaValidation(desc: Dict<PrimitiveType>) {
-  let obj = dict<ValidationBuilder<unknown>>();
-
-  for (let [key, value] of entries(desc)) {
-    obj[key] = value!.validation();
-  }
-
-  return build(validators.object(obj));
 }

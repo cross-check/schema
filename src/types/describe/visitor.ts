@@ -3,7 +3,9 @@ import {
   DictionaryLabel,
   Label,
   ListLabel,
+  NamedLabel,
   Optionality,
+  PointerLabel,
   PrimitiveLabel,
   SchemaType
 } from "./label";
@@ -13,12 +15,18 @@ export interface VisitorDelegate {
   primitive(label: Label<PrimitiveLabel>, position: Position): unknown;
   list(label: Label<ListLabel>, position: Position): unknown;
   dictionary(label: Label<DictionaryLabel>, position: Position): unknown;
+  pointer(label: Label<PointerLabel>, position: Position): unknown;
+  named(label: NamedLabel, position: Position): unknown;
 }
 
 export class Visitor {
   constructor(private delegate: VisitorDelegate) {}
 
   visit(label: Label, position: Position = Position.Any): unknown {
+    if (isNamed(label)) {
+      return this.delegate.named(label, position);
+    }
+
     switch (label.type.kind) {
       case "primitive": {
         return this.delegate.primitive(
@@ -37,6 +45,10 @@ export class Visitor {
           position
         );
       }
+
+      case "pointer": {
+        return this.delegate.pointer(label as Label<PointerLabel>, position);
+      }
     }
   }
 }
@@ -53,8 +65,10 @@ export function isRequired(
 }
 
 export interface RecursiveDelegate {
+  named(label: NamedLabel, required: boolean): unknown;
   primitive(type: SchemaType, required: boolean): unknown;
   list(item: ItemType<this>, required: boolean): unknown;
+  pointer(entity: ItemType<this>, required: boolean): unknown;
   dictionary(label: DictionaryLabel, required: boolean): unknown;
   schema(label: DictionaryLabel, required: boolean): unknown;
 }
@@ -64,14 +78,18 @@ export type ItemType<D extends RecursiveDelegate> =
   | ReturnType<D["list"]>
   | ReturnType<D["dictionary"]>;
 
-export class RecursiveVisitor<D extends RecursiveDelegate> extends Visitor {
-  constructor(private recursiveDelegate: D) {
-    super({
-      primitive: (label, position) => this.primitive(label, position),
-      list: (label, position) => this.list(label, position),
-      dictionary: (label, position) => this.dictionary(label, position)
-    });
+export class RecursiveVisitor<D extends RecursiveDelegate> {
+  static build<D extends RecursiveDelegate>(delegate: D): RecursiveVisitor<D> {
+    let recursiveVisitor = new RecursiveVisitor(delegate);
+    let visitor = new Visitor(recursiveVisitor);
+    recursiveVisitor.visitor = visitor;
+    return recursiveVisitor;
   }
+
+  private visitor!: Visitor;
+
+  private constructor(private recursiveDelegate: D) {}
+
   primitive(label: Label<PrimitiveLabel>, position: Position): unknown {
     let type = label.type.schemaType;
     let required =
@@ -80,9 +98,16 @@ export class RecursiveVisitor<D extends RecursiveDelegate> extends Visitor {
     return this.recursiveDelegate.primitive(type, required);
   }
 
+  pointer(label: Label<PointerLabel>, position: Position): unknown {
+    return this.recursiveDelegate.pointer(
+      this.visitor.visit(label.type.entity, Position.Only) as ItemType<D>,
+      isRequired(position, label)
+    );
+  }
+
   list(label: Label<ListLabel>, position: Position): unknown {
     return this.recursiveDelegate.list(
-      this.visit(label.type.item, Position.Only) as ItemType<D>,
+      this.visitor.visit(label.type.item, Position.Only) as ItemType<D>,
       isRequired(position, label)
     );
   }
@@ -99,6 +124,10 @@ export class RecursiveVisitor<D extends RecursiveDelegate> extends Visitor {
         isRequired(position, label)
       );
     }
+  }
+
+  named(label: NamedLabel, position: Position): unknown {
+    return this.recursiveDelegate.named(label, isRequired(position, label));
   }
 
   processDictionary(
@@ -120,19 +149,44 @@ export class RecursiveVisitor<D extends RecursiveDelegate> extends Visitor {
         dictPosition = Position.Middle;
       }
 
-      callback(this.visit(input[key]!, dictPosition) as ItemType<D>, key);
+      callback(
+        this.visitor.visit(input[key]!, dictPosition) as ItemType<D>,
+        key
+      );
     });
   }
 }
 
 export class StringVisitor<Buffer extends Accumulator<Inner>, Inner, Options> {
-  private visitor = new Visitor(this);
-  constructor(private reporter: Reporter<Buffer, Inner, Options>) {}
+  static build<Buffer extends Accumulator<Inner>, Inner, Options>(
+    reporter: Reporter<Buffer, Inner, Options>
+  ): StringVisitor<Buffer, Inner, Options> {
+    let stringVisitor = new StringVisitor(reporter);
+    let visitor = new Visitor(stringVisitor);
+    stringVisitor.visitor = visitor;
+    return stringVisitor;
+  }
+
+  private visitor!: Visitor;
+
+  private constructor(private reporter: Reporter<Buffer, Inner, Options>) {}
 
   primitive(label: Label<PrimitiveLabel>, position: Position): unknown {
     this.reporter.startPrimitiveValue(position, label.optionality);
     this.reporter.primitiveValue(label);
     this.reporter.endPrimitiveValue(position, label.optionality);
+  }
+
+  named(label: NamedLabel, position: Position): unknown {
+    this.reporter.startNamedValue(position, label.optionality);
+    this.reporter.namedValue(label);
+    this.reporter.endNamedValue(position, label.optionality);
+  }
+
+  pointer(label: Label<PointerLabel>, position: Position): unknown {
+    this.reporter.startReferenceValue(position, label);
+    this.visitor.visit(label.type.entity, Position.Only);
+    this.reporter.endReferenceValue(position, label);
   }
 
   list(label: Label<ListLabel>, position: Position): unknown {
@@ -171,4 +225,8 @@ export class StringVisitor<Buffer extends Accumulator<Inner>, Inner, Options> {
 
     return this.reporter.finish();
   }
+}
+
+function isNamed<T extends Label>(label: T): label is T & { name: string } {
+  return typeof label.name === "string";
 }

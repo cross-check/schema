@@ -35,6 +35,17 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     return " }";
   },
 
+  openReference(): string {
+    return `{ "type": "reference", "entity": `;
+  },
+  closeReference(): string {
+    return ` }`;
+  },
+
+  emitNamedType({ label, buffer }): void {
+    buffer.push(`${label.name}`);
+  },
+
   emitPrimitive({ label }): string {
     let { name, args } = label.type.schemaType;
     let isRequired = label.optionality === Optionality.Required;

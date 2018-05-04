@@ -1,11 +1,11 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import { Dict, JSONObject, dict, entries, unknown } from "ts-std";
-import { DirectValue } from "./fundamental/direct-value";
-import { Value } from "./fundamental/value";
-import { DictionaryLabel, Label, Optionality } from "./label";
-import { OptionalRefinedType, RefinedType } from "./refined";
-import { optional } from "./type";
-import { BRAND } from "./utils";
+import { DictionaryLabel, Label, Optionality } from "../label";
+import { OptionalRefinedType, RefinedType } from "../refined";
+import { optional } from "../type";
+import { BRAND } from "../utils";
+import { DirectValue } from "./direct-value";
+import { Value } from "./value";
 
 function buildSchemaValidation(desc: Dict<Value>): ValidationBuilder<unknown> {
   let obj = dict<ValidationBuilder<unknown>>();
@@ -19,8 +19,8 @@ function buildSchemaValidation(desc: Dict<Value>): ValidationBuilder<unknown> {
   return validators.object(obj);
 }
 
-export class DirectDictionary implements DirectValue {
-  [BRAND]: "DirectValue";
+export class PrimitiveDictionary implements DirectValue {
+  [BRAND]: "PrimitiveType";
 
   constructor(private inner: Dict<Value>) {}
 
@@ -72,7 +72,7 @@ function isDirectValue(type: Value | undefined): type is DirectValue {
 }
 
 /* @internal */
-export function refinedDictionary(
+export function dictionaryType(
   inner: Dict<RefinedType>
 ): RefinedType<DirectValue> {
   let customDict = dict<Value>();
@@ -83,7 +83,7 @@ export function refinedDictionary(
     }
   }
 
-  let strict = new DirectDictionary(customDict);
+  let strict = new PrimitiveDictionary(customDict);
 
   let baseDict = dict<Value>();
 
@@ -91,7 +91,7 @@ export function refinedDictionary(
     baseDict[key] = value!.draft;
   }
 
-  let draft = new DirectDictionary(baseDict);
+  let draft = new PrimitiveDictionary(baseDict);
 
   return {
     [BRAND]: "RequiredRefinedType",
@@ -103,5 +103,5 @@ export function refinedDictionary(
 export function Dictionary(
   properties: Dict<RefinedType>
 ): OptionalRefinedType<DirectValue> {
-  return optional(refinedDictionary(properties));
+  return optional(dictionaryType(properties));
 }

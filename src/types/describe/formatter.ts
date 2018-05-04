@@ -1,5 +1,5 @@
 import { SchemaReporter } from "./default";
-import { DictionaryLabel, Optionality } from "./label";
+import { DictionaryLabel, Label, Optionality } from "./label";
 import { Accumulator, Position, Reporter, ReporterDelegate } from "./reporter";
 import { StringVisitor } from "./visitor";
 
@@ -9,7 +9,7 @@ export type Formatter<Options = void, Result = string> = Options extends void
 
 export interface Schema {
   name: string;
-  label: DictionaryLabel;
+  label: Label<DictionaryLabel>;
 }
 
 export default function formatter<Buffer extends Accumulator<string>, Options>(
@@ -23,11 +23,11 @@ export default function formatter<Buffer extends Accumulator<string>, Options>(
       options,
       new BufferClass()
     );
-    let visitor = new StringVisitor<Buffer, string, typeof options>(reporter);
+    let visitor = StringVisitor.build<Buffer, string, typeof options>(reporter);
 
     return visitor.dictionary(
       {
-        type: schema.label,
+        type: schema.label.type,
         optionality: Optionality.None
       },
       Position.WholeSchema

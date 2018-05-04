@@ -92,6 +92,17 @@ const delegate: ReporterDelegate<BufferStack, string, GraphqlOptions> = {
     buffer.push("!]");
   },
 
+  openReference(): void {
+    /* noop */
+  },
+  closeReference(): void {
+    /* noop */
+  },
+
+  emitNamedType({ label, buffer }): void {
+    buffer.push(`${label.name}`);
+  },
+
   emitPrimitive({ label, buffer, options }): void {
     buffer.push(`${options.scalarMap[label.type.schemaType.name]}`);
   }

@@ -6,8 +6,29 @@ export enum Optionality {
   None
 }
 
+export function optionalLabel<T extends Label>(label: T): T {
+  return {
+    ...(label as any),
+    optionality: Optionality.Optional
+  };
+}
+
+export function requiredLabel<T extends Label>(label: T): T {
+  return {
+    ...(label as any),
+    optionality: Optionality.Required
+  };
+}
+
 export interface Label<T extends TypeLabel = TypeLabel> {
   type: T;
+  name?: string;
+  optionality: Optionality;
+}
+
+export interface NamedLabel<T extends TypeLabel = TypeLabel> {
+  type: T;
+  name: string;
   optionality: Optionality;
 }
 
@@ -28,21 +49,31 @@ export interface ListLabel {
   item: Label;
 }
 
-export interface TupleLabel {
-  kind: "tuple";
-  items: Label[];
-}
-
 export interface DictionaryLabel {
   kind: "dictionary";
   members: Dict<Label>;
 }
 
+export interface PointerLabel {
+  kind: "pointer";
+  schemaType: SchemaType;
+  entity: Label;
+}
+
+export interface IteratorLabel {
+  kind: "iterator";
+  schemaType: SchemaType;
+  item: Label;
+}
+
+export type ReferenceLabel = PointerLabel | IteratorLabel;
+
 export type TypeLabel =
   | PrimitiveLabel
   | ListLabel
-  | TupleLabel
-  | DictionaryLabel;
+  | DictionaryLabel
+  | PointerLabel
+  | IteratorLabel;
 
 export interface LabelOptions {
   name: string;

@@ -35,6 +35,17 @@ const delegate: ReporterDelegate<Buffer, string, TypescriptOptions> = {
     return ">";
   },
 
+  openReference(): void {
+    /* noop */
+  },
+  closeReference(): void {
+    /* noop */
+  },
+
+  emitNamedType({ label, buffer }): void {
+    buffer.push(`${label.name}`);
+  },
+
   emitPrimitive({ label }): string {
     return `${label.type.typescript}`;
   }

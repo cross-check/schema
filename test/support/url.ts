@@ -1,10 +1,11 @@
 import { ValidationBuilder } from "@cross-check/dsl";
 import {
+  BRAND,
+  DirectValue,
   Label,
-  OptionalType,
-  PrimitiveType,
+  OptionalRefinedType,
+  customPrimitive,
   label,
-  type,
   types
 } from "@cross-check/schema";
 import { unknown } from "ts-std";
@@ -59,7 +60,9 @@ export class Urlish {
   }
 }
 
-class UrlPrimitive implements PrimitiveType {
+class UrlPrimitive implements DirectValue {
+  [BRAND]: "PrimitiveType";
+
   constructor(private options: UrlType[]) {}
 
   get label(): Label {
@@ -89,6 +92,6 @@ export function urlish(full: string) {
   return new Urlish(result[1], result[2], result[3]);
 }
 
-export function Url(...args: UrlType[]): OptionalType {
-  return type(new UrlPrimitive(args), types.Text())();
+export function Url(...args: UrlType[]): OptionalRefinedType<DirectValue> {
+  return customPrimitive(new UrlPrimitive(args), types.Text())();
 }

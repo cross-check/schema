@@ -8,7 +8,9 @@
   "ember-addon": {
     "main": "ember-addon.js"
   },
-  "keywords": ["ember-addon"],
+  "keywords": [
+    "ember-addon"
+  ],
   "scripts": {
     "problems": "node ./scripts/problems.js",
     "preversion": "npm run test",
@@ -23,8 +25,7 @@
   "devDependencies": {
     "@types/commonmark": "^0.27.0",
     "@types/qunit": "^2.0.31",
-    "broccoli-typescript-compiler":
-      "https://github.com/tildeio/broccoli-typescript-compiler.git",
+    "broccoli-typescript-compiler": "https://github.com/tildeio/broccoli-typescript-compiler.git",
     "ember-cli": "^2.18.2",
     "libkit": "^0.5.19",
     "prettier": "^1.12.0",

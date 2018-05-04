@@ -5,10 +5,15 @@ import {
   validators
 } from "@cross-check/dsl";
 import { Option, unknown } from "ts-std";
-import { Label, label } from "./describe/label";
-import { OptionalType, PrimitiveType, primitive, type } from "./type";
+import { Label, label } from "../describe/label";
+import { DirectValue } from "../fundamental/direct-value";
+import { OptionalRefinedType } from "../refined";
+import { customPrimitive, primitive } from "../type";
+import { BRAND } from "../utils";
 
-class TextPrimitive implements PrimitiveType {
+class TextPrimitive implements DirectValue {
+  [BRAND]: "PrimitiveType";
+
   get label(): Label {
     return label({
       name: "Text",
@@ -29,9 +34,13 @@ class TextPrimitive implements PrimitiveType {
   }
 }
 
-export const Text: () => OptionalType = primitive(new TextPrimitive());
+export const Text: () => OptionalRefinedType<DirectValue> = primitive(
+  new TextPrimitive()
+);
 
-class NumberPrimitive implements PrimitiveType {
+class NumberPrimitive implements DirectValue {
+  [BRAND]: "PrimitiveType";
+
   get label(): Label {
     return label({
       name: "Number",
@@ -52,11 +61,15 @@ class NumberPrimitive implements PrimitiveType {
   }
 }
 
-const Num: () => OptionalType = primitive(new NumberPrimitive());
+const Num: () => OptionalRefinedType<DirectValue> = primitive(
+  new NumberPrimitive()
+);
 
 export { Num as Number };
 
-class IntegerPrimitive implements PrimitiveType {
+class IntegerPrimitive implements DirectValue {
+  [BRAND]: "PrimitiveType";
+
   get label(): Label {
     return label({
       name: "Integer",
@@ -85,7 +98,9 @@ class IntegerPrimitive implements PrimitiveType {
   }
 }
 
-export const Integer: () => OptionalType = primitive(new IntegerPrimitive());
+export const Integer: () => OptionalRefinedType<DirectValue> = primitive(
+  new IntegerPrimitive()
+);
 
 class SingleLinePrimitive extends TextPrimitive {
   get label(): Label {
@@ -108,10 +123,9 @@ class SingleLinePrimitive extends TextPrimitive {
   }
 }
 
-export const SingleLine: () => OptionalType = type(
-  new SingleLinePrimitive(),
-  Text()
-);
+export const SingleLine: () => OptionalRefinedType<
+  DirectValue
+> = customPrimitive(new SingleLinePrimitive(), Text());
 
 class SingleWordPrimitive extends TextPrimitive {
   get label(): Label {
@@ -134,12 +148,13 @@ class SingleWordPrimitive extends TextPrimitive {
   }
 }
 
-export const SingleWord: () => OptionalType = type(
-  new SingleWordPrimitive(),
-  Text()
-);
+export const SingleWord: () => OptionalRefinedType<
+  DirectValue
+> = customPrimitive(new SingleWordPrimitive(), Text());
 
-class AnyPrimitive implements PrimitiveType {
+class AnyPrimitive implements DirectValue {
+  [BRAND]: "PrimitiveType";
+
   get label(): Label {
     return label({
       name: "Any",
@@ -169,4 +184,6 @@ class AnyValidator extends ValueValidator<unknown, void> {
   }
 }
 
-export const Any = primitive(new AnyPrimitive());
+export const Any: () => OptionalRefinedType<DirectValue> = primitive(
+  new AnyPrimitive()
+);

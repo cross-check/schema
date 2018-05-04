@@ -1,6 +1,12 @@
 import { assert } from "ts-std";
 // import { Buffer as StringBuffer } from "./buffer";
-import { Label, Optionality, PrimitiveLabel } from "./label";
+import {
+  Label,
+  NamedLabel,
+  Optionality,
+  PointerLabel,
+  PrimitiveLabel
+} from "./label";
 
 export interface Reporters<Buffer, Inner, Options> {
   Value: ReporterStateConstructor<Buffer, Inner, Options>;
@@ -56,8 +62,28 @@ export interface ReporterDelegate<Buffer, Inner, Options> {
     buffer: Buffer;
     nesting: number;
   }): Inner | void;
+  openReference(options: {
+    position: Position;
+    label: Label<PointerLabel>;
+    options: Options;
+    buffer: Buffer;
+    nesting: number;
+  }): Inner | Buffer | void;
+  closeReference(options: {
+    position: Position;
+    label: Label<PointerLabel>;
+    options: Options;
+    buffer: Buffer;
+    nesting: number;
+  }): Inner | void;
   emitPrimitive(options: {
     label: Label<PrimitiveLabel>;
+    options: Options;
+    buffer: Buffer;
+    nesting: number;
+  }): Inner | void;
+  emitNamedType(options: {
+    label: NamedLabel;
     options: Options;
     buffer: Buffer;
     nesting: number;
@@ -134,9 +160,31 @@ export class Reporter<Buffer extends Accumulator<Inner>, Inner, Options> {
     }
   }
 
-  primitiveValue(type: Label): void {
+  primitiveValue(type: Label<PrimitiveLabel>): void {
     ifHasEvent(this.state, "primitiveValue", state => {
       state.primitiveValue(type);
+    });
+  }
+
+  startNamedValue(position: Position, optionality: Optionality): void {
+    ifHasEvent(this.state, "startNamedValue", state => {
+      state.startNamedValue(position, optionality);
+    });
+  }
+
+  endNamedValue(position: Position, optionality: Optionality): void {
+    let repeat: true | void = true;
+
+    while (repeat) {
+      repeat = ifHasEvent(this.state, "endNamedValue", state => {
+        return state.endNamedValue(position, optionality);
+      });
+    }
+  }
+
+  namedValue(type: NamedLabel): void {
+    ifHasEvent(this.state, "namedValue", state => {
+      state.namedValue(type);
     });
   }
 
@@ -152,6 +200,22 @@ export class Reporter<Buffer extends Accumulator<Inner>, Inner, Options> {
     while (repeat) {
       repeat = ifHasEvent(this.state, "endListValue", state => {
         return state.endListValue(position, optionality);
+      });
+    }
+  }
+
+  startReferenceValue(position: Position, label: Label<PointerLabel>): void {
+    ifHasEvent(this.state, "startReferenceValue", state => {
+      state.startReferenceValue(position, label);
+    });
+  }
+
+  endReferenceValue(position: Position, label: Label<PointerLabel>): void {
+    let repeat: true | void = true;
+
+    while (repeat) {
+      repeat = ifHasEvent(this.state, "endReferenceValue", state => {
+        return state.endReferenceValue(position, label);
       });
     }
   }
@@ -219,9 +283,10 @@ export abstract class ReporterState<Buffer, Inner, Options> {
     console.log(`<- nesting: ${this.nesting}`);
 
     console.log(
-      this.buffer instanceof StringBuffer
-        ? this.buffer.toString()
+      (this.buffer instanceof StringBuffer
+        ? this.buffer.done()
         : JSON.stringify(this.buffer)
+      ).replace(/\n/g, "\\n\n")
     );
     console.groupEnd();
 
@@ -233,6 +298,7 @@ export abstract class ReporterState<Buffer, Inner, Options> {
   startDictionary?(position: Position): void;
   addKey?(key: string, position: Position, optionality: Optionality): void;
   endDictionary?(position: Position, optionality: Optionality): true | void;
+
   startListValue?(position: Position, optionality: Optionality): void;
   listValue?(
     description: string,
@@ -240,13 +306,20 @@ export abstract class ReporterState<Buffer, Inner, Options> {
     optionality: Optionality
   ): void;
   endListValue?(position: Position, optionality: Optionality): true | void;
-  startTuple?(position: Position): void;
-  endTuple?(position: Position): true | void;
-  startGeneric?(name: string): void;
-  endGeneric?(): true | void;
+
+  startReferenceValue?(position: Position, label: Label<PointerLabel>): void;
+  endReferenceValue?(
+    position: Position,
+    label: Label<PointerLabel>
+  ): true | void;
+
   startPrimitiveValue?(position: Position, optionality: Optionality): void;
   primitiveValue?(type: Label): void;
   endPrimitiveValue?(position: Position, optionality: Optionality): true | void;
+
+  startNamedValue?(position: Position, optionality: Optionality): void;
+  namedValue?(type: NamedLabel): void;
+  endNamedValue?(position: Position, optionality: Optionality): true | void;
 
   protected state(): State<Buffer> {
     return {
