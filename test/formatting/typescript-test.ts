@@ -1,12 +1,12 @@
 import { Schema, types, typescript } from "@cross-check/schema";
 import { ISODate, strip } from "../support";
-import { DETAILED, SIMPLE } from "../support/schemas";
+import { MediumArticle, SimpleArticle } from "../support/schemas";
 
 QUnit.module("formatting - typescript");
 
 QUnit.test("simple", assert => {
   assert.equal(
-    typescript(SIMPLE, { name: "SimpleArticle" }),
+    typescript(SimpleArticle, { name: "SimpleArticle" }),
 
     strip`
         export interface SimpleArticle {
@@ -18,7 +18,7 @@ QUnit.test("simple", assert => {
   );
 
   assert.equal(
-    typescript(SIMPLE.draft, { name: "SimpleArticleDraft" }),
+    typescript(SimpleArticle.draft, { name: "SimpleArticleDraft" }),
 
     strip`
         export interface SimpleArticleDraft {
@@ -32,7 +32,7 @@ QUnit.test("simple", assert => {
 
 QUnit.test("detailed", assert => {
   assert.equal(
-    typescript(DETAILED, { name: "MediumArticle" }),
+    typescript(MediumArticle, { name: "MediumArticle" }),
 
     strip`
       export interface MediumArticle {
@@ -60,7 +60,7 @@ QUnit.test("detailed", assert => {
   );
 
   assert.equal(
-    typescript(DETAILED.draft, { name: "MediumArticleDraft" }),
+    typescript(MediumArticle.draft, { name: "MediumArticleDraft" }),
 
     strip`
       export interface MediumArticleDraft {

@@ -6,13 +6,13 @@ import {
   validateDraft,
   validatePublished
 } from "./support";
-import { SIMPLE } from "./support/schemas";
+import { SimpleArticle } from "./support/schemas";
 
 QUnit.module("@cross-check/schema - simple schema");
 
 QUnit.test("string serialization", assert => {
   assert.equal(
-    serialize(SIMPLE),
+    serialize(SimpleArticle),
 
     strip`
       {
@@ -24,7 +24,7 @@ QUnit.test("string serialization", assert => {
   );
 
   assert.equal(
-    serialize(SIMPLE.draft),
+    serialize(SimpleArticle.draft),
 
     strip`
       {
@@ -38,7 +38,7 @@ QUnit.test("string serialization", assert => {
 
 QUnit.test("missing fields", async assert => {
   assert.deepEqual(
-    await validateDraft(SIMPLE, {}),
+    await validateDraft(SimpleArticle, {}),
     [],
     "draft schemas can be missing fields"
   );
@@ -46,7 +46,7 @@ QUnit.test("missing fields", async assert => {
 
 QUnit.test("type widening works", async assert => {
   assert.deepEqual(
-    await validateDraft(SIMPLE, {
+    await validateDraft(SimpleArticle, {
       hed: "Hello world\nNo problem here",
       dek: "Hello, the cool world!"
     }),
@@ -57,7 +57,7 @@ QUnit.test("type widening works", async assert => {
 
 QUnit.test("published drafts must be narrow", async assert => {
   assert.deepEqual(
-    await validatePublished(SIMPLE, {
+    await validatePublished(SimpleArticle, {
       hed: "Hello world\nProblem here!",
       dek: "Hello, the cool world!"
     }),
@@ -68,7 +68,7 @@ QUnit.test("published drafts must be narrow", async assert => {
 
 QUnit.test("parsing", assert => {
   assert.deepEqual(
-    SIMPLE.parse({
+    SimpleArticle.parse({
       hed: "Hello world",
       body: "The body"
     }),
@@ -80,7 +80,7 @@ QUnit.test("parsing", assert => {
   );
 
   assert.deepEqual(
-    SIMPLE.parse({
+    SimpleArticle.parse({
       hed: "Hello world",
       dek: "Hello. Hello world.",
       body: "The body"
@@ -95,7 +95,7 @@ QUnit.test("parsing", assert => {
 
 QUnit.test("serialize", assert => {
   assert.deepEqual(
-    SIMPLE.serialize({
+    SimpleArticle.serialize({
       hed: "Hello world",
       body: "The body"
     }),
@@ -107,7 +107,7 @@ QUnit.test("serialize", assert => {
   );
 
   assert.deepEqual(
-    SIMPLE.serialize({
+    SimpleArticle.serialize({
       hed: "Hello world",
       dek: "Hello. Hello world.",
       body: "The body"
@@ -122,7 +122,7 @@ QUnit.test("serialize", assert => {
 
 QUnit.test("a valid published draft", async assert => {
   assert.deepEqual(
-    await validatePublished(SIMPLE, {
+    await validatePublished(SimpleArticle, {
       hed: "Hello world",
       dek: "Hello, the cool world!\nMultiline allowed here",
       body: "Hello world.\nThis text is permitted.\nTotally fine."

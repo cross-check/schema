@@ -1,6 +1,11 @@
 import { Dict, unknown } from "ts-std";
 import { Schema } from "../formatter";
-import { DictionaryLabel, NamedLabel, SchemaType } from "../label";
+import {
+  DictionaryLabel,
+  GenericLabel,
+  NamedLabel,
+  SchemaType
+} from "../label";
 import { RecursiveDelegate, RecursiveVisitor } from "../visitor";
 
 interface Primitive {
@@ -9,15 +14,9 @@ interface Primitive {
   required: boolean;
 }
 
-interface List {
-  type: "List";
-  items: Item;
-  required: boolean;
-}
-
-interface Pointer {
-  type: "Pointer";
-  entity: Item;
+interface Generic {
+  type: "Pointer" | "List" | "Iterator";
+  of: Item;
   required: boolean;
 }
 
@@ -27,7 +26,7 @@ interface Dictionary {
   required: boolean;
 }
 
-type Item = List | Primitive | Dictionary;
+type Item = Generic | Primitive | Dictionary;
 
 class JSONFormatter implements RecursiveDelegate {
   private visitor = RecursiveVisitor.build(this);
@@ -52,24 +51,32 @@ class JSONFormatter implements RecursiveDelegate {
 
   named(label: NamedLabel, required: boolean): unknown {
     return {
-      type: label.type,
+      type: label.type.kind,
       name: label.name,
       required
     };
   }
 
-  pointer(entity: Item, required: boolean): Pointer {
-    return {
-      type: "Pointer",
-      entity,
-      required
-    };
-  }
+  generic<L extends GenericLabel>(
+    entity: Item,
+    label: L,
+    required: boolean
+  ): Generic {
+    let kind: "Pointer" | "List" | "Iterator";
 
-  list(item: Item, required: boolean): List {
+    if (label.kind === "iterator") {
+      kind = "Iterator";
+    } else if (label.kind === "list") {
+      kind = "List";
+    } else if (label.kind === "pointer") {
+      kind = "Pointer";
+    } else {
+      throw new Error("unreachable");
+    }
+
     return {
-      type: "List",
-      items: item,
+      type: kind!,
+      of: entity,
       required
     };
   }

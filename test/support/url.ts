@@ -1,7 +1,7 @@
 import { ValidationBuilder } from "@cross-check/dsl";
 import {
   BRAND,
-  DirectValue,
+  InlineType,
   Label,
   OptionalRefinedType,
   customPrimitive,
@@ -60,7 +60,7 @@ export class Urlish {
   }
 }
 
-class UrlPrimitive implements DirectValue {
+class UrlPrimitive implements InlineType {
   [BRAND]: "PrimitiveType";
 
   constructor(private options: UrlType[]) {}
@@ -92,6 +92,6 @@ export function urlish(full: string) {
   return new Urlish(result[1], result[2], result[3]);
 }
 
-export function Url(...args: UrlType[]): OptionalRefinedType<DirectValue> {
+export function Url(...args: UrlType[]): OptionalRefinedType<InlineType> {
   return customPrimitive(new UrlPrimitive(args), types.Text())();
 }

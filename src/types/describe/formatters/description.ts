@@ -26,26 +26,29 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     }
   },
 
-  openReference() {
-    return `has one `;
+  openGeneric({ label }) {
+    switch (label.type.kind) {
+      case "iterator":
+        return "has many ";
+      case "pointer":
+        return "has one ";
+      case "list":
+        return "list of ";
+    }
   },
 
-  closeReference() {
-    /* noop */
-  },
-
-  closeList(): void {
+  closeGeneric() {
     /* noop */
   },
 
   openDictionary(): string {
     return `{\n`;
   },
-  openList(): string {
-    return "list of ";
-  },
   emitPrimitive({ label }): string {
     return `<${label.type.description}>`;
+  },
+  endPrimitive(): void {
+    /* noop */
   },
   emitNamedType({ label }): string {
     return `${label.name}`;

@@ -28,18 +28,24 @@ const delegate: ReporterDelegate<Buffer, string, TypescriptOptions> = {
     return ";\n";
   },
 
-  openList(): string {
-    return "Array<";
-  },
-  closeList(): string {
-    return ">";
+  openGeneric({ label }): string | void {
+    switch (label.type.kind) {
+      case "iterator":
+      case "list":
+        return `Array<`;
+      case "pointer":
+      default:
+    }
   },
 
-  openReference(): void {
-    /* noop */
-  },
-  closeReference(): void {
-    /* noop */
+  closeGeneric({ label }): string | void {
+    switch (label.type.kind) {
+      case "iterator":
+      case "list":
+        return `>`;
+      case "pointer":
+      default:
+    }
   },
 
   emitNamedType({ label, buffer }): void {
@@ -48,6 +54,10 @@ const delegate: ReporterDelegate<Buffer, string, TypescriptOptions> = {
 
   emitPrimitive({ label }): string {
     return `${label.type.typescript}`;
+  },
+
+  endPrimitive(): void {
+    /* noop */
   }
 };
 

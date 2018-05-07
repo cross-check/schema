@@ -6,7 +6,7 @@ import {
   validateDraft,
   validatePublished
 } from "./support";
-import { DETAILED } from "./support/schemas";
+import { MediumArticle } from "./support/schemas";
 
 QUnit.module("@cross-check/schema - detailed schema");
 
@@ -14,7 +14,7 @@ QUnit.test(
   "missing fields (including dictionaries with required fields inside and required arrays)",
   async assert => {
     assert.deepEqual(
-      await validateDraft(DETAILED, {}),
+      await validateDraft(MediumArticle, {}),
       [],
       "draft schemas can be missing fields"
     );
@@ -23,7 +23,7 @@ QUnit.test(
 
 QUnit.test("drafts", async assert => {
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       hed: "Not\nactually\na\nsingle\nline",
       canonicalUrl: "totally -- invalid :: url"
     }),
@@ -32,7 +32,7 @@ QUnit.test("drafts", async assert => {
   );
 
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       categories: []
     }),
     [],
@@ -40,7 +40,7 @@ QUnit.test("drafts", async assert => {
   );
 
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       categories: ["This\nis\na multiline\nstring"]
     }),
     [],
@@ -50,7 +50,7 @@ QUnit.test("drafts", async assert => {
 
 QUnit.test("published documents", async assert => {
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "Not\nactually\na\nsingle\nline",
       canonicalUrl: "totally -- invalid :: url"
     }),
@@ -64,7 +64,7 @@ QUnit.test("published documents", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       tags: [1, "tag", {}],
@@ -77,7 +77,7 @@ QUnit.test("published documents", async assert => {
 
 QUnit.test("dates (issueDate)", async assert => {
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       issueDate: "not -- a valid :: date"
     }),
     [typeError("iso-date", "issueDate")],
@@ -85,7 +85,7 @@ QUnit.test("dates (issueDate)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       issueDate: "not -- a valid :: date",
@@ -97,7 +97,7 @@ QUnit.test("dates (issueDate)", async assert => {
 
 QUnit.test("optional dictionaries (geo)", async assert => {
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       geo: {}
     }),
     [],
@@ -105,7 +105,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: {},
@@ -116,7 +116,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       categories: ["single"]
@@ -126,7 +126,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content"
     }),
@@ -135,7 +135,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       geo: { lat: "10", long: "20" }
     }),
     [typeError("number", "geo.lat"), typeError("number", "geo.long")],
@@ -143,7 +143,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: { lat: "10", long: "20" },
@@ -154,7 +154,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: { lat: 10.5, long: 20.5 },
@@ -168,7 +168,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       author: { first: "Christina\nTODO: Check", last: "Kung" }
     }),
     [],
@@ -176,7 +176,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       author: { first: "Christina\nTODO: Check", last: "Kung" },
       body: "Hello world\nMore content",
@@ -189,7 +189,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
 
 QUnit.test("optional dictionaries (geo)", async assert => {
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       geo: {}
     }),
     [],
@@ -197,7 +197,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: {},
@@ -208,7 +208,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       categories: ["single"]
@@ -218,7 +218,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content"
     }),
@@ -227,7 +227,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       geo: { lat: "10", long: "20" }
     }),
     [typeError("number", "geo.lat"), typeError("number", "geo.long")],
@@ -235,7 +235,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: { lat: "10", long: "20" },
@@ -246,7 +246,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       author: { first: "Christina\nTODO: Check", last: "Kung" }
     }),
     [],
@@ -254,7 +254,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       author: { first: "Christina\nTODO: Check", last: "Kung" },
       body: "Hello world\nMore content",
@@ -267,7 +267,7 @@ QUnit.test("optional dictionaries (geo)", async assert => {
 
 QUnit.test("required lists (categories)", async assert => {
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: { lat: 10, long: 20 },
@@ -278,7 +278,7 @@ QUnit.test("required lists (categories)", async assert => {
   );
 
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: { lat: 10, long: 20 },
@@ -289,7 +289,7 @@ QUnit.test("required lists (categories)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: { lat: 10, long: 20 }
@@ -299,7 +299,7 @@ QUnit.test("required lists (categories)", async assert => {
   );
 
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: { lat: 10, long: 20 }
@@ -311,7 +311,7 @@ QUnit.test("required lists (categories)", async assert => {
 
 QUnit.test("optional lists (tags)", async assert => {
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: { lat: 10, long: 20 },
@@ -323,7 +323,7 @@ QUnit.test("optional lists (tags)", async assert => {
   );
 
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: { lat: 10, long: 20 },
@@ -335,7 +335,7 @@ QUnit.test("optional lists (tags)", async assert => {
   );
 
   assert.deepEqual(
-    await validatePublished(DETAILED, {
+    await validatePublished(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       geo: { lat: 10, long: 20 },
@@ -346,7 +346,7 @@ QUnit.test("optional lists (tags)", async assert => {
   );
 
   assert.deepEqual(
-    await validateDraft(DETAILED, {
+    await validateDraft(MediumArticle, {
       hed: "A single line",
       body: "Hello world\nMore content",
       categories: ["somecategory"],
@@ -359,7 +359,7 @@ QUnit.test("optional lists (tags)", async assert => {
 
 QUnit.test("parsing", assert => {
   assert.deepEqual(
-    DETAILED.parse({
+    MediumArticle.parse({
       hed: "Hello world",
       body: "The body",
       categories: ["one category", "two categories"]
@@ -379,7 +379,7 @@ QUnit.test("parsing", assert => {
   );
 
   assert.deepEqual(
-    DETAILED.parse({
+    MediumArticle.parse({
       hed: "Hello world",
       dek: null,
       body: "The body",
@@ -409,7 +409,7 @@ QUnit.test("parsing", assert => {
   let url = urlish("https://example.com/path/to/hello");
 
   assert.deepEqual(
-    DETAILED.parse({
+    MediumArticle.parse({
       hed: "Hello world",
       dek: "Hello. Hello world.",
       body: "The body",
@@ -458,7 +458,7 @@ QUnit.test("parsing", assert => {
 
 QUnit.test("serializing", assert => {
   assert.deepEqual(
-    DETAILED.serialize({
+    MediumArticle.serialize({
       hed: "Hello world",
       body: "The body",
       categories: ["one category", "two categories"]
@@ -478,7 +478,7 @@ QUnit.test("serializing", assert => {
   );
 
   assert.deepEqual(
-    DETAILED.serialize({
+    MediumArticle.serialize({
       hed: "Hello world",
       dek: null,
       body: "The body",
@@ -508,7 +508,7 @@ QUnit.test("serializing", assert => {
   let url = urlish("https://example.com/path/to/hello");
 
   assert.deepEqual(
-    DETAILED.serialize({
+    MediumArticle.serialize({
       hed: "Hello world",
       dek: "Hello. Hello world.",
       body: "The body",

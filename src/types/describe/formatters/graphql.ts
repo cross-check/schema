@@ -81,22 +81,29 @@ const delegate: ReporterDelegate<BufferStack, string, GraphqlOptions> = {
   closeDictionary({ buffer }): void {
     buffer.doneType();
   },
-  closeValue({ buffer, optionality, position }): void {
-    buffer.doneValue(isRequired(position, optionality));
+  closeValue({ buffer, optionality }): void {
+    buffer.doneValue(isRequired(optionality));
   },
 
-  openList({ buffer }): void {
-    buffer.push("[");
+  openGeneric({ buffer, label }): void {
+    switch (label.type.kind) {
+      case "iterator":
+      case "list":
+        buffer.push("[");
+        break;
+      case "pointer":
+      default:
+    }
   },
-  closeList({ buffer }): void {
-    buffer.push("!]");
-  },
-
-  openReference(): void {
-    /* noop */
-  },
-  closeReference(): void {
-    /* noop */
+  closeGeneric({ buffer, label }): void {
+    switch (label.type.kind) {
+      case "iterator":
+      case "list":
+        buffer.push("!]");
+        break;
+      case "pointer":
+      default:
+    }
   },
 
   emitNamedType({ label, buffer }): void {
@@ -105,6 +112,9 @@ const delegate: ReporterDelegate<BufferStack, string, GraphqlOptions> = {
 
   emitPrimitive({ label, buffer, options }): void {
     buffer.push(`${options.scalarMap[label.type.schemaType.name]}`);
+  },
+  endPrimitive(): void {
+    /* noop */
   }
 };
 

@@ -28,18 +28,11 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     }
   },
 
-  openList(): string {
-    return `{ "type": "list", "of": `;
+  openGeneric({ label }): string {
+    return `{ "type": "${label.type.kind}", "of": `;
   },
-  closeList(): string {
+  closeGeneric(): string {
     return " }";
-  },
-
-  openReference(): string {
-    return `{ "type": "reference", "entity": `;
-  },
-  closeReference(): string {
-    return ` }`;
   },
 
   emitNamedType({ label, buffer }): void {
@@ -52,6 +45,10 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     return `{ "type": ${JSON.stringify(name)}, "details": ${JSON.stringify(
       args
     )}, "required": ${isRequired} }`;
+  },
+
+  endPrimitive(): void {
+    /* noop */
   }
 };
 

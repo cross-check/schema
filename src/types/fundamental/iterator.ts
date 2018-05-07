@@ -1,8 +1,8 @@
-import { IteratorLabel, Label, Optionality } from "../label";
+import { IteratorLabel, Label, Optionality, requiredLabel } from "../label";
 import { OptionalRefinedType, Type, strictType } from "../refined";
 import { buildOptional } from "../type";
 import { BRAND } from "../utils";
-import { DirectValue } from "./direct-value";
+import { InlineType } from "./direct-value";
 import { OptionalReferenceImpl, Reference } from "./reference";
 
 export interface Iterator extends Reference {
@@ -12,7 +12,7 @@ export interface Iterator extends Reference {
 export class IteratorImpl implements Iterator {
   [BRAND]: "Pointer";
 
-  constructor(private inner: Type<DirectValue>) {}
+  constructor(private inner: Type<InlineType>) {}
 
   get label(): Label<IteratorLabel> {
     return {
@@ -22,7 +22,7 @@ export class IteratorImpl implements Iterator {
           name: "hasMany",
           args: []
         },
-        item: strictType(this.inner).label
+        of: requiredLabel(strictType(this.inner).label)
       },
       optionality: Optionality.None
     };
@@ -30,7 +30,7 @@ export class IteratorImpl implements Iterator {
 }
 
 export function hasMany(
-  entity: Type<DirectValue>
+  entity: Type<InlineType>
 ): OptionalRefinedType<Reference> {
   let reference = new IteratorImpl(entity);
   let optional = new OptionalReferenceImpl(reference);

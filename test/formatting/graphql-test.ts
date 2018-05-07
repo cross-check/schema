@@ -1,12 +1,12 @@
 import { graphql } from "@cross-check/schema";
 import { GRAPHQL_SCALAR_MAP, strip } from "../support";
-import { DETAILED, RELATED, SIMPLE } from "../support/schemas";
+import { MediumArticle, Related, SimpleArticle } from "../support/schemas";
 
 QUnit.module("formatting - graphql");
 
 QUnit.test("simple", assert => {
   assert.equal(
-    graphql(SIMPLE, { name: "Simple", scalarMap: GRAPHQL_SCALAR_MAP }),
+    graphql(SimpleArticle, { name: "Simple", scalarMap: GRAPHQL_SCALAR_MAP }),
     strip`
       type Simple {
         hed: SingleLine!
@@ -17,7 +17,10 @@ QUnit.test("simple", assert => {
   );
 
   assert.equal(
-    graphql(SIMPLE.draft, { name: "Simple", scalarMap: GRAPHQL_SCALAR_MAP }),
+    graphql(SimpleArticle.draft, {
+      name: "Simple",
+      scalarMap: GRAPHQL_SCALAR_MAP
+    }),
     strip`
       type Simple {
         hed: String
@@ -30,7 +33,10 @@ QUnit.test("simple", assert => {
 
 QUnit.test("detailed", assert => {
   assert.equal(
-    graphql(DETAILED, { name: "MediumArticle", scalarMap: GRAPHQL_SCALAR_MAP }),
+    graphql(MediumArticle, {
+      name: "MediumArticle",
+      scalarMap: GRAPHQL_SCALAR_MAP
+    }),
 
     strip`
     type MediumArticle_author {
@@ -66,13 +72,14 @@ QUnit.test("detailed", assert => {
 
 QUnit.test("relationships", assert => {
   assert.equal(
-    graphql(RELATED, { name: "Related", scalarMap: GRAPHQL_SCALAR_MAP }),
+    graphql(Related, { name: "Related", scalarMap: GRAPHQL_SCALAR_MAP }),
 
     strip`
       type Related {
-        first: String
+        first: SingleLine
         last: String
-        person: SimpleArticle
+        person: SimpleArticle!
+        articles: [MediumArticle!]
       }
     `
   );

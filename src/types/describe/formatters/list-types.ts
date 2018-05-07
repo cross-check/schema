@@ -1,6 +1,11 @@
 import { Dict, unknown } from "ts-std";
 import { Schema } from "../formatter";
-import { DictionaryLabel, NamedLabel, SchemaType } from "../label";
+import {
+  DictionaryLabel,
+  GenericLabel,
+  NamedLabel,
+  SchemaType
+} from "../label";
 import { RecursiveDelegate, RecursiveVisitor } from "../visitor";
 
 class ListTypes implements RecursiveDelegate {
@@ -18,12 +23,10 @@ class ListTypes implements RecursiveDelegate {
     return { [name]: true };
   }
 
-  pointer(entity: Dict): Dict {
-    return { ...entity, Pointer: true };
-  }
-
-  list(item: Dict): Dict {
-    return { ...item, List: true };
+  generic(of: Dict, label: GenericLabel): Dict {
+    let kind = label.kind;
+    let name = `${kind[0].toUpperCase()}${kind.slice(1)}`;
+    return { ...of, [name]: true };
   }
 
   dictionary(label: DictionaryLabel): Dict {

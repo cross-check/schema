@@ -17,19 +17,40 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
   emitKey({ key, nesting }): string {
     return `${pad(nesting * 2)}${key}: `;
   },
-  closeDictionary({ buffer, nesting, optionality }): string | void {
+  closeDictionary({ buffer, nesting, position, optionality }): string | void {
     buffer.push(`${pad(nesting * 2)}})`);
 
-    if (optionality === Optionality.Required) {
+    if (
+      optionality === Optionality.Required &&
+      position !== Position.ListItem &&
+      position !== Position.PointerItem
+    ) {
       buffer.push(".required()");
     }
   },
 
-  openReference({ buffer }): void {
-    buffer.push("hasOne(");
+  openGeneric({ buffer, label }): void {
+    switch (label.type.kind) {
+      case "iterator":
+        buffer.push("hasMany(");
+        break;
+      case "list":
+        buffer.push("List(");
+        break;
+      case "pointer":
+        buffer.push("hasOne(");
+    }
   },
-  closeReference({ buffer }): void {
+  closeGeneric({ buffer, position, label }): void {
     buffer.push(")");
+
+    if (
+      label.optionality === Optionality.Required &&
+      position !== Position.ListItem &&
+      position !== Position.PointerItem
+    ) {
+      buffer.push(".required()");
+    }
   },
 
   emitNamedType({ label, buffer }): void {
@@ -44,25 +65,24 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     }
   },
 
-  openList(): string {
-    return "List(";
-  },
-  closeList(): string {
-    return ")";
-  },
-
   emitPrimitive({ label }): string {
     return formatType(label);
+  },
+
+  endPrimitive({ position, optionality }): string | void {
+    if (
+      optionality === Optionality.Required &&
+      position !== Position.ListItem &&
+      position !== Position.IteratorItem
+    ) {
+      return `.required()`;
+    }
   }
 };
 
 function formatType(label: Label<PrimitiveLabel>) {
   let { name, args } = label.type.schemaType;
   let out = `${name}(${args.join(", ")})`;
-
-  if (label.optionality === Optionality.Required) {
-    out += `.required()`;
-  }
 
   return out;
 }

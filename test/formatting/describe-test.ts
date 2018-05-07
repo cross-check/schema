@@ -1,12 +1,17 @@
 import { Schema, describe, types } from "@cross-check/schema";
 import { ISODate, strip } from "../support";
-import { DETAILED, RELATED, SIMPLE } from "../support/schemas";
+import {
+  MediumArticle,
+  Nesting,
+  Related,
+  SimpleArticle
+} from "../support/schemas";
 
 QUnit.module("formatting - describe");
 
 QUnit.test("simple", assert => {
   assert.equal(
-    describe(SIMPLE),
+    describe(SimpleArticle),
 
     strip`
       {
@@ -18,7 +23,7 @@ QUnit.test("simple", assert => {
   );
 
   assert.equal(
-    describe(SIMPLE.draft),
+    describe(SimpleArticle.draft),
 
     strip`
       {
@@ -32,7 +37,7 @@ QUnit.test("simple", assert => {
 
 QUnit.test("detailed", assert => {
   assert.equal(
-    describe(DETAILED),
+    describe(MediumArticle),
 
     strip`
       {
@@ -60,7 +65,7 @@ QUnit.test("detailed", assert => {
   );
 
   assert.equal(
-    describe(DETAILED.draft),
+    describe(MediumArticle.draft),
 
     strip`
       {
@@ -139,13 +144,42 @@ QUnit.test("records", assert => {
 
 QUnit.test("relationships", assert => {
   assert.equal(
-    describe(RELATED),
+    describe(Related),
 
     strip`
       {
-        first?: <string>,
+        first?: <single line string>,
         last?: <string>,
-        person?: has one SimpleArticle
+        person: has one SimpleArticle,
+        articles?: has many MediumArticle
+      }
+    `
+  );
+});
+
+QUnit.test("nested", assert => {
+  assert.equal(
+    describe(Nesting),
+
+    strip`
+      {
+        people: list of {
+          first?: <single line string>,
+          last?: <string>
+        }
+      }
+    `
+  );
+
+  assert.equal(
+    describe(Nesting.draft),
+
+    strip`
+      {
+        people?: list of {
+          first?: <string>,
+          last?: <string>
+        }
       }
     `
   );

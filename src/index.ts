@@ -9,7 +9,7 @@ export {
   label,
   describe
 } from "./types";
-export { DirectValue } from "./types/fundamental/direct-value";
+export { InlineType } from "./types/fundamental/direct-value";
 export * from "./types/describe/formatters";
 import * as types from "./types";
 export * from "./types/type";

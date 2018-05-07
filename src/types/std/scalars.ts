@@ -6,12 +6,12 @@ import {
 } from "@cross-check/dsl";
 import { Option, unknown } from "ts-std";
 import { Label, label } from "../describe/label";
-import { DirectValue } from "../fundamental/direct-value";
+import { InlineType } from "../fundamental/direct-value";
 import { OptionalRefinedType } from "../refined";
 import { customPrimitive, primitive } from "../type";
 import { BRAND } from "../utils";
 
-class TextPrimitive implements DirectValue {
+class TextPrimitive implements InlineType {
   [BRAND]: "PrimitiveType";
 
   get label(): Label {
@@ -34,11 +34,11 @@ class TextPrimitive implements DirectValue {
   }
 }
 
-export const Text: () => OptionalRefinedType<DirectValue> = primitive(
+export const Text: () => OptionalRefinedType<InlineType> = primitive(
   new TextPrimitive()
 );
 
-class NumberPrimitive implements DirectValue {
+class NumberPrimitive implements InlineType {
   [BRAND]: "PrimitiveType";
 
   get label(): Label {
@@ -61,13 +61,13 @@ class NumberPrimitive implements DirectValue {
   }
 }
 
-const Num: () => OptionalRefinedType<DirectValue> = primitive(
+const Num: () => OptionalRefinedType<InlineType> = primitive(
   new NumberPrimitive()
 );
 
 export { Num as Number };
 
-class IntegerPrimitive implements DirectValue {
+class IntegerPrimitive implements InlineType {
   [BRAND]: "PrimitiveType";
 
   get label(): Label {
@@ -98,7 +98,7 @@ class IntegerPrimitive implements DirectValue {
   }
 }
 
-export const Integer: () => OptionalRefinedType<DirectValue> = primitive(
+export const Integer: () => OptionalRefinedType<InlineType> = primitive(
   new IntegerPrimitive()
 );
 
@@ -124,7 +124,7 @@ class SingleLinePrimitive extends TextPrimitive {
 }
 
 export const SingleLine: () => OptionalRefinedType<
-  DirectValue
+  InlineType
 > = customPrimitive(new SingleLinePrimitive(), Text());
 
 class SingleWordPrimitive extends TextPrimitive {
@@ -149,10 +149,10 @@ class SingleWordPrimitive extends TextPrimitive {
 }
 
 export const SingleWord: () => OptionalRefinedType<
-  DirectValue
+  InlineType
 > = customPrimitive(new SingleWordPrimitive(), Text());
 
-class AnyPrimitive implements DirectValue {
+class AnyPrimitive implements InlineType {
   [BRAND]: "PrimitiveType";
 
   get label(): Label {
@@ -184,6 +184,6 @@ class AnyValidator extends ValueValidator<unknown, void> {
   }
 }
 
-export const Any: () => OptionalRefinedType<DirectValue> = primitive(
+export const Any: () => OptionalRefinedType<InlineType> = primitive(
   new AnyPrimitive()
 );

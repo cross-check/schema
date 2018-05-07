@@ -4,7 +4,7 @@ import { Label } from "../label";
 import { BRAND, maybe } from "../utils";
 import { OptionalImpl, Required, RequiredImpl } from "./nullable";
 
-export interface DirectValue<JS = unknown, Wire = JSON | undefined> {
+export interface InlineType<JS = unknown, Wire = JSON | undefined> {
   [BRAND]: any;
 
   readonly label: Label;
@@ -14,8 +14,8 @@ export interface DirectValue<JS = unknown, Wire = JSON | undefined> {
   parse(input: Wire): JS;
 }
 
-export class RequiredDirectValueImpl extends RequiredImpl<DirectValue>
-  implements DirectValue {
+export class RequiredDirectValueImpl extends RequiredImpl<InlineType>
+  implements InlineType {
   serialize(js: any): any {
     return this.inner.serialize(js);
   }
@@ -30,7 +30,7 @@ export class RequiredDirectValueImpl extends RequiredImpl<DirectValue>
   }
 }
 
-export class OptionalDirectValueImpl extends OptionalImpl<DirectValue> {
+export class OptionalDirectValueImpl extends OptionalImpl<InlineType> {
   validation(): ValidationBuilder<unknown> {
     return maybe(this.inner.validation());
   }
@@ -51,7 +51,7 @@ export class OptionalDirectValueImpl extends OptionalImpl<DirectValue> {
     }
   }
 
-  required(): Required & DirectValue {
+  required(): Required & InlineType {
     return new RequiredDirectValueImpl(this.inner);
   }
 }

@@ -46,7 +46,7 @@ export interface PrimitiveLabel {
 
 export interface ListLabel {
   kind: "list";
-  item: Label;
+  of: Label;
 }
 
 export interface DictionaryLabel {
@@ -57,15 +57,16 @@ export interface DictionaryLabel {
 export interface PointerLabel {
   kind: "pointer";
   schemaType: SchemaType;
-  entity: Label;
+  of: Label;
 }
 
 export interface IteratorLabel {
   kind: "iterator";
   schemaType: SchemaType;
-  item: Label;
+  of: Label;
 }
 
+export type GenericLabel = PointerLabel | IteratorLabel | ListLabel;
 export type ReferenceLabel = PointerLabel | IteratorLabel;
 
 export type TypeLabel =

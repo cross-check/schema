@@ -1,4 +1,4 @@
-import { DirectValue } from "./direct-value";
+import { InlineType } from "./direct-value";
 import { Reference } from "./reference";
 
-export type Value = DirectValue | Reference;
+export type Value = InlineType | Reference;

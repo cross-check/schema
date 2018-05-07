@@ -2,12 +2,15 @@ import { Environment, ValidationError, validate } from "@cross-check/core";
 import build from "@cross-check/dsl";
 import { Task } from "no-show";
 import { Dict, JSONObject, dict, entries, unknown } from "ts-std";
+import { BRAND } from "./index";
 import { DictionaryLabel, Label } from "./types/describe";
 import { PrimitiveDictionary } from "./types/fundamental/dictionary";
 import { Value } from "./types/fundamental/value";
-import { Type, draftType, strictType } from "./types/refined";
+import { RefinedType, Type, draftType, strictType } from "./types/refined";
 
-export default class Schema {
+export default class Schema implements RefinedType {
+  [BRAND]: "RequiredRefinedType";
+
   constructor(public name: string, private obj: Dict<Type>) {}
 
   get draft(): ValidatableSchema {
@@ -21,22 +24,22 @@ export default class Schema {
   }
 
   get label(): Label<DictionaryLabel> {
-    return this.custom.label;
+    return this.strict.label;
   }
 
   validate(obj: Dict<unknown>, env: Environment): Task<ValidationError[]> {
-    return this.custom.validate(obj, env);
+    return this.strict.validate(obj, env);
   }
 
   parse(wire: JSONObject): Dict<unknown> {
-    return this.custom.parse(wire);
+    return this.strict.parse(wire);
   }
 
   serialize(js: Dict<unknown>): JSONObject {
-    return this.custom.serialize(js);
+    return this.strict.serialize(js);
   }
 
-  get custom(): ValidatableSchema {
+  get strict(): ValidatableSchema {
     let schema = dict<Value>();
 
     for (let [key, value] of entries(this.obj)) {

@@ -1,5 +1,5 @@
 import {
-  DirectValue,
+  InlineType,
   OptionalDirectValueImpl
 } from "./fundamental/direct-value";
 import { Optional } from "./fundamental/nullable";
@@ -16,29 +16,37 @@ import { BRAND, isBranded } from "./utils";
 /**
  * Internals Vocabulary:
  *
- * Reference:
+ * Reference Type:
  *   Represents data that is not directly included in the parent object.
  *   Dereferencing a reference may be asynchronous.
  *
- * Direct Value:
+ * Inline Type:
  *   Represent data that is directly included in the parent object.
  *   They include scalars, lists and dictionaries.
  *
- * Scalar (Value):
- *   A single value.
+ * Value:
+ *   A value of any type (reference or inline).
  *
- * List (Value):
- *   A list of values.
+ * Scalar (Inline):
+ *   A single inline value.
  *
- * Dictionary (Value):
- *   A set of key-value pairs. A dictionary's values are Values.A dictionary's keys are strings.
+ * List (Inline):
+ *   A list of inline values.
+ *
+ * Dictionary (Inline):
+ *   A set of key-value pairs. A dictionary's values are inline value. A dictionary's keys are strings.
  *
  * Pointer (Reference):
- *   A reference to a value.
+ *   A reference to another value.
  *
  * Iterator (Reference):
  *   A reference to a sequence of values. Each iteration of an iterator may be asynchronous.
  *
+ * Refined Type:
+ *   A type that has a strict component and a draft component. Component must either both be inline
+ *   or both be references. A type's draft component corresponds to distinctions in underlying
+ *   storage and user interface elements, and is intended to make it possible to auto-save
+ *   in-progress work in a user interface.s
  */
 
 export function requiredType<Inner extends Value>(
@@ -64,8 +72,8 @@ export function buildRequiredType<Inner extends Value>(
 }
 
 export function buildOptionalValue(
-  t: Type<DirectValue>
-): OptionalRefinedType<DirectValue> {
+  t: Type<InlineType>
+): OptionalRefinedType<InlineType> {
   let strict = new OptionalDirectValueImpl(strictType(t));
   let draft = new OptionalDirectValueImpl(draftType(t));
 
@@ -92,7 +100,7 @@ export function buildOptional<Inner extends Value>({
 
 export { buildOptionalValue as optional };
 
-function newValue(p: DirectValue): () => OptionalRefinedType<DirectValue> {
+function newValue(p: InlineType): () => OptionalRefinedType<InlineType> {
   let optional = buildOptionalValue({
     [BRAND]: "RequiredRefinedType" as "RequiredRefinedType",
     strict: p,
@@ -105,9 +113,9 @@ function newValue(p: DirectValue): () => OptionalRefinedType<DirectValue> {
 export { newValue as primitive };
 
 export function customPrimitive(
-  strict: DirectValue,
-  draft: OptionalRefinedType<DirectValue>
-): () => OptionalRefinedType<DirectValue> {
+  strict: InlineType,
+  draft: OptionalRefinedType<InlineType>
+): () => OptionalRefinedType<InlineType> {
   let optional = buildOptionalValue({
     [BRAND]: "RequiredRefinedType" as "RequiredRefinedType",
     strict,

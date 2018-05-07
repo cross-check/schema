@@ -4,14 +4,14 @@ import { DictionaryLabel, Label, Optionality } from "../label";
 import { OptionalRefinedType, Type, draftType, strictType } from "../refined";
 import { optional } from "../type";
 import { BRAND } from "../utils";
-import { DirectValue } from "./direct-value";
+import { InlineType } from "./direct-value";
 import { Value } from "./value";
 
 function buildSchemaValidation(desc: Dict<Value>): ValidationBuilder<unknown> {
   let obj = dict<ValidationBuilder<unknown>>();
 
   for (let [key, value] of entries(desc)) {
-    if (isDirectValue(value)) {
+    if (isInlineType(value)) {
       obj[key] = value!.validation();
     }
   }
@@ -19,7 +19,7 @@ function buildSchemaValidation(desc: Dict<Value>): ValidationBuilder<unknown> {
   return validators.object(obj);
 }
 
-export class PrimitiveDictionary implements DirectValue {
+export class PrimitiveDictionary implements InlineType {
   [BRAND]: "PrimitiveType";
 
   constructor(private inner: Dict<Value>) {}
@@ -41,7 +41,7 @@ export class PrimitiveDictionary implements DirectValue {
     let out: JSONObject = {};
 
     for (let [key, value] of entries(this.inner)) {
-      if (isDirectValue(value)) {
+      if (isInlineType(value)) {
         out[key] = value!.serialize(js[key]);
       }
     }
@@ -53,7 +53,7 @@ export class PrimitiveDictionary implements DirectValue {
     let out: Dict<unknown> = {};
 
     for (let [key, value] of entries(this.inner)) {
-      if (isDirectValue(value)) {
+      if (isInlineType(value)) {
         out[key] = value!.parse(wire[key]!);
       }
     }
@@ -66,17 +66,17 @@ export class PrimitiveDictionary implements DirectValue {
   }
 }
 
-function isDirectValue(type: Value | undefined): type is DirectValue {
+function isInlineType(type: Value | undefined): type is InlineType {
   if (type === undefined) return false;
   return typeof (type as any).serialize === "function";
 }
 
 /* @internal */
-export function dictionaryType(inner: Dict<Type>): Type<DirectValue> {
+export function dictionaryType(inner: Dict<Type>): Type<InlineType> {
   let customDict = dict<Value>();
 
   for (let [key, value] of entries(inner)) {
-    if (isDirectValue(strictType(value!))) {
+    if (isInlineType(strictType(value!))) {
       customDict[key] = strictType(value!);
     }
   }
@@ -99,7 +99,7 @@ export function dictionaryType(inner: Dict<Type>): Type<DirectValue> {
 }
 
 export function Dictionary(
-  properties: Dict<Type<DirectValue>>
-): OptionalRefinedType<DirectValue> {
+  properties: Dict<Type<InlineType>>
+): OptionalRefinedType<InlineType> {
   return optional(dictionaryType(properties));
 }

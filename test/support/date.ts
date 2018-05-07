@@ -1,7 +1,7 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import {
   BRAND,
-  DirectValue,
+  InlineType,
   Label,
   OptionalRefinedType,
   label,
@@ -15,7 +15,7 @@ function isValidDate(input: string): boolean {
   return input === new Date(parsed).toISOString();
 }
 
-class DatePrimitive implements DirectValue {
+class DatePrimitive implements InlineType {
   [BRAND]: "PrimitiveType";
 
   get label(): Label {
@@ -42,6 +42,6 @@ class DatePrimitive implements DirectValue {
   }
 }
 
-export const ISODate: () => OptionalRefinedType<DirectValue> = primitive(
+export const ISODate: () => OptionalRefinedType<InlineType> = primitive(
   new DatePrimitive()
 );

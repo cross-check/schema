@@ -1,16 +1,16 @@
 import { toJSON } from "@cross-check/schema";
-import { DETAILED, SIMPLE } from "../support/schemas";
+import { MediumArticle, Related, SimpleArticle } from "../support/schemas";
 
 QUnit.module("formatting - toJSON");
 
 QUnit.test("simple", assert => {
-  assert.deepEqual(toJSON(SIMPLE), {
+  assert.deepEqual(toJSON(SimpleArticle), {
     hed: { type: "SingleLine", required: true },
     dek: { type: "Text", required: false },
     body: { type: "Text", required: true }
   });
 
-  assert.deepEqual(toJSON(SIMPLE.draft), {
+  assert.deepEqual(toJSON(SimpleArticle.draft), {
     hed: { type: "Text", required: false },
     dek: { type: "Text", required: false },
     body: { type: "Text", required: false }
@@ -18,7 +18,7 @@ QUnit.test("simple", assert => {
 });
 
 QUnit.test("detailed - published", assert => {
-  let actual = toJSON(DETAILED);
+  let actual = toJSON(MediumArticle);
   let expected = {
     hed: { type: "SingleLine", required: true },
     dek: { type: "Text", required: false },
@@ -36,7 +36,7 @@ QUnit.test("detailed - published", assert => {
     canonicalUrl: { type: "Url", required: false },
     tags: {
       type: "List",
-      items: {
+      of: {
         type: "SingleWord",
         required: true
       },
@@ -44,7 +44,7 @@ QUnit.test("detailed - published", assert => {
     },
     categories: {
       type: "List",
-      items: {
+      of: {
         type: "SingleLine",
         required: true
       },
@@ -61,7 +61,7 @@ QUnit.test("detailed - published", assert => {
     contributors: {
       type: "List",
       required: false,
-      items: {
+      of: {
         type: "Dictionary",
         // list items are always required
         required: true,
@@ -77,7 +77,7 @@ QUnit.test("detailed - published", assert => {
 });
 
 QUnit.test("detailed - draft", assert => {
-  let actual = toJSON(DETAILED.draft);
+  let actual = toJSON(MediumArticle.draft);
   let expected = {
     hed: { type: "Text", required: false },
     dek: { type: "Text", required: false },
@@ -95,7 +95,7 @@ QUnit.test("detailed - draft", assert => {
     canonicalUrl: { type: "Text", required: false },
     tags: {
       type: "List",
-      items: {
+      of: {
         type: "Text",
         // items inside lists are always required
         required: true
@@ -104,7 +104,7 @@ QUnit.test("detailed - draft", assert => {
     },
     categories: {
       type: "List",
-      items: {
+      of: {
         type: "Text",
         required: true
       },
@@ -121,7 +121,7 @@ QUnit.test("detailed - draft", assert => {
     contributors: {
       type: "List",
       required: false,
-      items: {
+      of: {
         type: "Dictionary",
         required: true,
         members: {
@@ -133,4 +133,62 @@ QUnit.test("detailed - draft", assert => {
   };
 
   assert.deepEqual(actual, expected);
+});
+
+QUnit.test("relationships", assert => {
+  assert.deepEqual(
+    toJSON(Related),
+
+    {
+      first: { type: "SingleLine", required: false },
+      last: { type: "Text", required: false },
+      person: {
+        type: "Pointer",
+        required: true,
+        of: {
+          name: "SimpleArticle",
+          type: "dictionary",
+          required: true
+        }
+      },
+      articles: {
+        type: "Iterator",
+        required: false,
+        of: {
+          name: "MediumArticle",
+          type: "dictionary",
+          required: true
+        }
+      }
+    },
+    "Related"
+  );
+
+  assert.deepEqual(
+    toJSON(Related.draft),
+
+    {
+      first: { type: "Text", required: false },
+      last: { type: "Text", required: false },
+      person: {
+        type: "Pointer",
+        required: false,
+        of: {
+          name: "SimpleArticle",
+          type: "dictionary",
+          required: false
+        }
+      },
+      articles: {
+        type: "Iterator",
+        required: false,
+        of: {
+          name: "MediumArticle",
+          type: "dictionary",
+          required: true
+        }
+      }
+    },
+    "Related.draft"
+  );
 });

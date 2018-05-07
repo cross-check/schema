@@ -1,18 +1,12 @@
-import { Buffer as StringBuffer } from "./buffer";
 import {
+  GenericLabel,
+  IteratorLabel,
   Label,
   NamedLabel,
   Optionality,
-  PointerLabel,
   PrimitiveLabel
 } from "./label";
 import { Position, ReporterState } from "./reporter";
-
-function pushStrings<Buffer, Inner>(value: Inner | void, buffer: Buffer): void {
-  if (buffer instanceof StringBuffer && typeof value === "string") {
-    buffer.push(value);
-  }
-}
 
 export class SchemaReporter<Buffer, Inner, Options> extends ReporterState<
   Buffer,
@@ -28,9 +22,16 @@ export class SchemaReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   None
    */
-  startDictionary(): true {
+  startSchema(): void {
+    this.state.nesting += 1;
+
+    this.pushStrings(
+      this.reporters.openSchema({
+        ...this.state
+      })
+    );
+
     this.push(StructureReporter);
-    return true;
   }
 
   /**
@@ -42,8 +43,70 @@ export class SchemaReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   None
    */
-  endDictionary(): void {
-    /* noop: finish the outer dictionary */
+  endSchema(): void {
+    this.pushStrings(
+      this.reporters.closeSchema({
+        ...this.state
+      })
+    );
+  }
+}
+
+export class KeyValueReporter<Buffer, Inner, Options> extends ReporterState<
+  Buffer,
+  Inner,
+  Options
+> {
+  endValue(position: Position, label: Label): void {
+    this.pushStrings(
+      this.reporters.closeValue({
+        position,
+        optionality: label.optionality,
+        ...this.state
+      })
+    );
+
+    this.pop();
+    assertTop(this.getStack(), StructureReporter);
+  }
+
+  /**
+   * The current value was a list, and it is done.
+   *
+   * Stack:
+   *   ..., Structure ->
+   *   ..., Structure
+   * Calls:
+   *   structure#closeValue
+   */
+  endGenericValue(): void {
+    /* noop */
+  }
+
+  /**
+   * The current value was a reference, and it is done.
+   *
+   * Stack:
+   *   ..., Structure ->
+   *   ..., Structure
+   * Calls:
+   *   structure#closeValue
+   */
+  endNamedValue(): void {
+    /* noop */
+  }
+
+  /**
+   * The current value was a primitive, and it is done.
+   *
+   * Stack:
+   *   ..., Structure ->
+   *   ..., Structure
+   * Calls:
+   *   structure#closeValue
+   */
+  endPrimitiveValue(): void {
+    /* noop */
   }
 }
 
@@ -62,27 +125,14 @@ export class StructureReporter<Buffer, Inner, Options> extends ReporterState<
    *   value#openDictionary
    */
   startDictionary(position: Position): void {
-    this.nesting += 1;
+    this.state.nesting += 1;
 
-    if (position === Position.WholeSchema) {
-      pushStrings(
-        this.reporters.openSchema({
-          buffer: this.buffer,
-          options: this.options
-        }),
-        this.buffer
-      );
-    } else {
-      pushStrings(
-        this.reporters.openDictionary({
-          position,
-          options: this.options,
-          nesting: this.nesting,
-          buffer: this.buffer
-        }),
-        this.buffer
-      );
-    }
+    this.pushStrings(
+      this.reporters.openDictionary({
+        position,
+        ...this.state
+      })
+    );
   }
 
   /**
@@ -95,107 +145,17 @@ export class StructureReporter<Buffer, Inner, Options> extends ReporterState<
    *   structure#emitKey
    */
   addKey(key: string, position: Position, optionality: Optionality): void {
-    pushStrings(
+    this.pushStrings(
       this.reporters.emitKey({
         key,
         position,
         optionality,
-        options: this.options,
-        buffer: this.buffer,
-        nesting: this.nesting
-      }),
-      this.buffer
+        ...this.state
+      })
     );
 
+    this.push(KeyValueReporter);
     this.push(ValueReporter);
-  }
-
-  /**
-   * The current value was a list, and it is done.
-   *
-   * Stack:
-   *   ..., Structure ->
-   *   ..., Structure
-   * Calls:
-   *   structure#closeValue
-   */
-  endListValue(position: Position, optionality: Optionality): void {
-    pushStrings(
-      this.reporters.closeValue({
-        position,
-        optionality,
-        options: this.options,
-        nesting: this.nesting,
-        buffer: this.buffer
-      }),
-      this.buffer
-    );
-  }
-
-  /**
-   * The current value was a reference, and it is done.
-   *
-   * Stack:
-   *   ..., Structure ->
-   *   ..., Structure
-   * Calls:
-   *   structure#closeValue
-   */
-  endReferenceValue(position: Position, label: Label<PointerLabel>): void {
-    pushStrings(
-      this.reporters.closeValue({
-        position,
-        optionality: label.optionality,
-        options: this.options,
-        nesting: this.nesting,
-        buffer: this.buffer
-      }),
-      this.buffer
-    );
-  }
-
-  /**
-   * The current value was a reference, and it is done.
-   *
-   * Stack:
-   *   ..., Structure ->
-   *   ..., Structure
-   * Calls:
-   *   structure#closeValue
-   */
-  endNamedValue(position: Position, optionality: Optionality): void {
-    pushStrings(
-      this.reporters.closeValue({
-        position,
-        optionality,
-        options: this.options,
-        nesting: this.nesting,
-        buffer: this.buffer
-      }),
-      this.buffer
-    );
-  }
-
-  /**
-   * The current value was a primitive, and it is done.
-   *
-   * Stack:
-   *   ..., Structure ->
-   *   ..., Structure
-   * Calls:
-   *   structure#closeValue
-   */
-  endPrimitiveValue(position: Position, optionality: Optionality): void {
-    pushStrings(
-      this.reporters.closeValue({
-        position,
-        optionality,
-        options: this.options,
-        nesting: this.nesting,
-        buffer: this.buffer
-      }),
-      this.buffer
-    );
   }
 
   /**
@@ -207,45 +167,23 @@ export class StructureReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   structure#closeDictionary
    */
-  endDictionary(position: Position, optionality: Optionality): true | void {
-    this.nesting -= 1;
+  endDictionary(position: Position, { optionality }: Label): true | void {
+    this.state.nesting -= 1;
 
-    if (position === Position.WholeSchema) {
-      pushStrings(
-        this.reporters.closeSchema({
-          options: this.options,
-          buffer: this.buffer
-        }),
-        this.buffer
-      );
-    } else {
-      pushStrings(
-        this.reporters.closeDictionary({
-          position,
-          optionality,
-          options: this.options,
-          buffer: this.buffer,
-          nesting: this.nesting
-        }),
-        this.buffer
-      );
-    }
-
-    if (position !== Position.WholeSchema && position !== Position.Only) {
-      pushStrings(
-        this.reporters.closeValue({
-          position,
-          optionality,
-          options: this.options,
-          buffer: this.buffer,
-          nesting: this.nesting
-        }),
-        this.buffer
-      );
-    }
+    this.pushStrings(
+      this.reporters.closeDictionary({
+        position,
+        optionality,
+        ...this.state
+      })
+    );
 
     this.pop();
-    // assertTop(this.getStack(), ValueReporter, SchemaReporter);
+    return true;
+  }
+
+  endSchema(): true {
+    this.pop();
     return true;
   }
 }
@@ -299,36 +237,16 @@ export class GenericReporter<Buffer, Inner, Options> extends ReporterState<
     /* noop */
   }
 
-  /**
-   * The list value has finished.
-   *
-   * Stack:
-   *   ..., Value, List ->
-   *   ..., Value (and repeat)
-   * Calls:
-   *   generic#closeList
-   */
-  endListValue(position: Position, optionality: Optionality): true {
-    pushStrings(
-      this.reporters.closeList({
+  endGenericValue(position: Position, label: Label<IteratorLabel>): void {
+    this.pushStrings(
+      this.reporters.closeGeneric({
         position,
-        optionality,
-        options: this.options,
-        nesting: this.nesting,
-        buffer: this.buffer
-      }),
-      this.buffer
+        label,
+        ...this.state
+      })
     );
-
     this.pop();
     assertTop(this.getStack(), ValueReporter);
-    return true;
-  }
-
-  endReferenceValue(): true {
-    this.pop();
-    assertTop(this.getStack(), ValueReporter);
-    return true;
   }
 
   /**
@@ -340,10 +258,9 @@ export class GenericReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   generic#closeList
    */
-  endNamedValue(): true {
+  endNamedValue(): void {
     this.pop();
     assertTop(this.getStack(), ValueReporter);
-    return true;
   }
 
   /**
@@ -390,15 +307,12 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   value#primitiveValue
    */
-  primitiveValue(label: Label<PrimitiveLabel>): void {
-    pushStrings(
+  primitiveValue(_position: Position, label: Label<PrimitiveLabel>): void {
+    this.pushStrings(
       this.reporters.emitPrimitive({
         label,
-        options: this.options,
-        nesting: this.nesting,
-        buffer: this.buffer
-      }),
-      this.buffer
+        ...this.state
+      })
     );
   }
 
@@ -412,17 +326,14 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    *   value#openDictionary
    */
   startDictionary(position: Position): void {
-    pushStrings(
+    this.pushStrings(
       this.reporters.openDictionary({
         position,
-        options: this.options,
-        nesting: this.nesting,
-        buffer: this.buffer
-      }),
-      this.buffer
+        ...this.state
+      })
     );
 
-    this.nesting += 1;
+    this.state.nesting += 1;
     this.push(StructureReporter);
   }
 
@@ -437,7 +348,7 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    */
   endDictionary(): void {
     this.pop();
-    assertTop(this.getStack(), StructureReporter);
+    assertTop(this.getStack(), KeyValueReporter);
   }
 
   /**
@@ -449,53 +360,13 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   value#openList
    */
-  startListValue(position: Position): void {
-    pushStrings(
-      this.reporters.openList({
-        position,
-        nesting: this.nesting,
-        buffer: this.buffer
-      }),
-      this.buffer
-    );
-    this.push(GenericReporter);
-  }
-
-  /**
-   * The value was a list and is done.
-   *
-   * Stack:
-   *   ..., List, Value ->
-   *   ..., List (and repeat)
-   * Calls:
-   *   None
-   */
-  endListValue(): true {
-    this.pop();
-    assertTop(this.getStack(), GenericReporter, StructureReporter);
-
-    return true;
-  }
-
-  /**
-   * The value is a Reference.
-   *
-   * Stack:
-   *   ..., Value ->
-   *   ..., Value
-   * Calls:
-   *   value#openReference
-   */
-  startReferenceValue(position: Position, label: Label<PointerLabel>): void {
-    pushStrings(
-      this.reporters.openReference({
+  startGenericValue(position: Position, label: Label<GenericLabel>): void {
+    this.pushStrings(
+      this.reporters.openGeneric({
         position,
         label,
-        options: this.options,
-        nesting: this.nesting,
-        buffer: this.buffer
-      }),
-      this.buffer
+        ...this.state
+      })
     );
     this.push(GenericReporter);
   }
@@ -509,7 +380,7 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   None
    */
-  endReferenceValue(): true {
+  endGenericValue(): true {
     this.pop();
     assertTop(this.getStack(), StructureReporter);
 
@@ -543,15 +414,12 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
     assertTop(this.getStack(), StructureReporter, GenericReporter);
   }
 
-  namedValue(label: NamedLabel): void {
-    pushStrings(
+  namedValue(_position: Position, label: NamedLabel): void {
+    this.pushStrings(
       this.reporters.emitNamedType({
         label,
-        options: this.options,
-        buffer: this.buffer,
-        nesting: this.nesting
-      }),
-      this.buffer
+        ...this.state
+      })
     );
   }
 
@@ -564,9 +432,23 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   None
    */
-  endPrimitiveValue(): true {
+  endPrimitiveValue(position: Position, { optionality }: Label): true {
+    this.pushStrings(
+      this.reporters.endPrimitive({
+        position,
+        optionality,
+        ...this.state
+      })
+    );
+
     this.pop();
 
+    return true;
+  }
+
+  endValue(): true {
+    this.pop();
+    assertTop(this.getStack(), KeyValueReporter);
     return true;
   }
 }

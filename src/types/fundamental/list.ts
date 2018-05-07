@@ -1,6 +1,6 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import { unknown } from "ts-std";
-import { Label, Optionality } from "../label";
+import { Label, Optionality, requiredLabel } from "../label";
 import {
   OptionalRefinedType,
   RequiredRefinedType,
@@ -11,7 +11,7 @@ import {
 import { buildRequiredType } from "../type";
 import { BRAND } from "../utils";
 import {
-  DirectValue,
+  InlineType,
   OptionalDirectValueImpl,
   RequiredDirectValueImpl
 } from "./direct-value";
@@ -22,7 +22,7 @@ const isPresentArray = validators.is(
   "present-array"
 );
 
-export interface PrimitiveArray extends DirectValue {
+export interface PrimitiveArray extends InlineType {
   readonly label: Label;
   validation(): ValidationBuilder<unknown>;
 
@@ -33,13 +33,13 @@ export interface PrimitiveArray extends DirectValue {
 class PrimitiveArrayImpl implements PrimitiveArray {
   [BRAND]: "Primitive";
 
-  constructor(private itemType: DirectValue) {}
+  constructor(private itemType: InlineType) {}
 
   get label(): Label {
     return {
       type: {
         kind: "list",
-        item: this.itemType.label
+        of: requiredLabel(this.itemType.label)
       },
       optionality: Optionality.None
     };
@@ -84,7 +84,7 @@ class RequiredPrimitiveArray extends RequiredDirectValueImpl {
 }
 
 export function List(
-  item: Type<DirectValue>
+  item: Type<InlineType>
 ): OptionalRefinedType<PrimitiveArray> {
   let strict = new PrimitiveArrayImpl(strictType(item));
   let draft = new PrimitiveArrayImpl(draftType(item));

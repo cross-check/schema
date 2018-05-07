@@ -1,19 +1,13 @@
-import {
-  DirectValue,
-  OptionalRefinedType,
-  Schema,
-  primitive,
-  types
-} from "@cross-check/schema";
+import { Schema, types } from "@cross-check/schema";
 import { ISODate, Url } from "../support";
 
-export const SIMPLE = new Schema("SimpleArticle", {
+export const SimpleArticle = new Schema("SimpleArticle", {
   hed: types.SingleLine().required(),
   dek: types.Text(),
   body: types.Text().required()
 });
 
-export const DETAILED = new Schema("MediumArticle", {
+export const MediumArticle = new Schema("MediumArticle", {
   hed: types.SingleLine().required(),
   dek: types.Text(),
   body: types.Text().required(),
@@ -34,11 +28,21 @@ export const DETAILED = new Schema("MediumArticle", {
   )
 });
 
-const Simple: OptionalRefinedType<DirectValue> = primitive(SIMPLE.custom)();
-
-export const RELATED = new Schema("related", {
-  first: types.Text(),
+export const Related = new Schema("Related", {
+  first: types.SingleLine(),
   last: types.Text(),
 
-  person: types.hasOne(Simple)
+  person: types.hasOne(SimpleArticle).required(),
+  articles: types.hasMany(MediumArticle)
+});
+
+export const Nesting = new Schema("Nesting", {
+  people: types
+    .List(
+      types.Dictionary({
+        first: types.SingleLine(),
+        last: types.Text()
+      })
+    )
+    .required()
 });

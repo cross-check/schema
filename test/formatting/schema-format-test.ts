@@ -1,12 +1,12 @@
 import { Schema, schemaFormat, types } from "@cross-check/schema";
 import { ISODate, strip } from "../support";
-import { DETAILED, SIMPLE } from "../support/schemas";
+import { MediumArticle, Related, SimpleArticle } from "../support/schemas";
 
 QUnit.module("formatting - schemaFormat");
 
 QUnit.test("simple", assert => {
   assert.equal(
-    schemaFormat(SIMPLE),
+    schemaFormat(SimpleArticle),
 
     strip`
       {
@@ -18,7 +18,7 @@ QUnit.test("simple", assert => {
   );
 
   assert.equal(
-    schemaFormat(SIMPLE.draft),
+    schemaFormat(SimpleArticle.draft),
 
     strip`
       {
@@ -32,7 +32,7 @@ QUnit.test("simple", assert => {
 
 QUnit.test("detailed - published", assert => {
   assert.equal(
-    schemaFormat(DETAILED),
+    schemaFormat(MediumArticle),
 
     strip`
       {
@@ -46,7 +46,7 @@ QUnit.test("detailed - published", assert => {
         issueDate: ISODate(),
         canonicalUrl: Url(),
         tags: List(SingleWord()),
-        categories: List(SingleLine()),
+        categories: List(SingleLine()).required(),
         geo: Dictionary({
           lat: Integer().required(),
           long: Integer().required()
@@ -62,7 +62,7 @@ QUnit.test("detailed - published", assert => {
 
 QUnit.test("detailed - draft", assert => {
   assert.equal(
-    schemaFormat(DETAILED.draft),
+    schemaFormat(MediumArticle.draft),
 
     strip`
       {
@@ -134,6 +134,34 @@ QUnit.test("records", assert => {
           last: Text()
         }),
         date: ISODate()
+      }
+    `
+  );
+});
+
+QUnit.test("relationships", assert => {
+  assert.equal(
+    schemaFormat(Related),
+
+    strip`
+      {
+        first: SingleLine(),
+        last: Text(),
+        person: hasOne(SimpleArticle).required(),
+        articles: hasMany(MediumArticle)
+      }
+    `
+  );
+
+  assert.equal(
+    schemaFormat(Related.draft),
+
+    strip`
+      {
+        first: Text(),
+        last: Text(),
+        person: hasOne(SimpleArticle),
+        articles: hasMany(MediumArticle)
       }
     `
   );
