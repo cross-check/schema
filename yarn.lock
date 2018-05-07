@@ -3461,7 +3461,7 @@ leek@0.0.24:
     lodash.assign "^3.2.0"
     rsvp "^3.0.21"
 
-libkit@^0.5.19:
+libkit@^0.5.20:
   version "0.5.20"
   resolved "https://registry.yarnpkg.com/libkit/-/libkit-0.5.20.tgz#693c4a719e35b3740040dfb4556c7b7e4e5e9553"
   dependencies:
