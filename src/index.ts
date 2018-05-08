@@ -7,7 +7,8 @@ export {
   Record,
   Interface,
   label,
-  describe
+  describe,
+  RecursiveVisitor
 } from "./types";
 export { InlineType } from "./types/fundamental/direct-value";
 export * from "./types/describe/formatters";
