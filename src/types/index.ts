@@ -10,5 +10,6 @@ export {
   serialize,
   toJSON,
   listTypes,
-  label
+  label,
+  RecursiveVisitor
 } from "./describe";
