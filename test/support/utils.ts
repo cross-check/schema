@@ -1,5 +1,5 @@
 import { ValidationError } from "@cross-check/core";
-import { Schema } from "@cross-check/schema";
+import { Record } from "@cross-check/schema";
 import { Task } from "no-show";
 import { Dict, unknown } from "ts-std";
 
@@ -21,6 +21,7 @@ export function strip(
   let lines = result.split("\n").slice(1, -1);
 
   let leading = lines.reduce((accum, line) => {
+    if (line.match(/^\s*$/)) return accum;
     let size = line.match(/^(\s*)/)![1].length;
     return Math.min(accum, size);
   }, Infinity);
@@ -31,14 +32,14 @@ export function strip(
 }
 
 export function validateDraft(
-  schema: Schema,
+  schema: Record,
   obj: Dict<unknown>
 ): Task<ValidationError[]> {
   return schema.draft.validate(obj, ENV);
 }
 
 export function validatePublished(
-  schema: Schema,
+  schema: Record,
   obj: Dict<unknown>
 ): Task<ValidationError[]> {
   return schema.validate(obj, ENV);

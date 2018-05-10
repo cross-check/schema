@@ -1,24 +1,38 @@
-import { Dict, unknown } from "ts-std";
+import { Dict, JSON, Option, unknown } from "ts-std";
 import { Schema } from "../formatter";
 import {
   DictionaryLabel,
   GenericLabel,
+  IteratorLabel,
   NamedLabel,
+  PointerLabel,
   SchemaType
 } from "../label";
 import { RecursiveDelegate, RecursiveVisitor } from "../visitor";
 
 interface Primitive {
   type: string;
-  args?: string[];
+  args?: JSON;
   required: boolean;
 }
 
 interface Generic {
   type: "Pointer" | "List" | "Iterator";
+  kind?: string;
+  args?: JSON;
   of: Item;
   required: boolean;
 }
+
+interface GenericReference extends Generic {
+  type: "Pointer" | "Iterator";
+  kind: string;
+  args?: JSON;
+  of: Item;
+  required: boolean;
+}
+
+type GenericOptions = Pick<GenericReference, "kind" | "args">;
 
 interface Dictionary {
   type: "Dictionary";
@@ -42,7 +56,7 @@ class JSONFormatter implements RecursiveDelegate {
   }
 
   primitive({ name: type, args }: SchemaType, required: boolean): Primitive {
-    if (args.length) {
+    if (args !== undefined) {
       return { type, args, required };
     } else {
       return { type, required };
@@ -52,7 +66,7 @@ class JSONFormatter implements RecursiveDelegate {
   named(label: NamedLabel, required: boolean): unknown {
     return {
       type: label.type.kind,
-      name: label.name,
+      name: label.name.name,
       required
     };
   }
@@ -62,20 +76,24 @@ class JSONFormatter implements RecursiveDelegate {
     label: L,
     required: boolean
   ): Generic {
-    let kind: "Pointer" | "List" | "Iterator";
+    let type: "Pointer" | "List" | "Iterator";
+    let options: Option<{ kind?: string; args?: JSON }> = {};
 
     if (label.kind === "iterator") {
-      kind = "Iterator";
+      type = "Iterator";
+      options = referenceOptions(label as IteratorLabel);
     } else if (label.kind === "list") {
-      kind = "List";
+      type = "List";
     } else if (label.kind === "pointer") {
-      kind = "Pointer";
+      type = "Pointer";
+      options = referenceOptions(label as IteratorLabel);
     } else {
       throw new Error("unreachable");
     }
 
     return {
-      type: kind!,
+      type: type!,
+      ...options,
       of: entity,
       required
     };
@@ -88,6 +106,22 @@ class JSONFormatter implements RecursiveDelegate {
       required
     };
   }
+}
+
+function referenceOptions(
+  label: PointerLabel | IteratorLabel
+): Pick<GenericReference, "kind" | "args"> {
+  let schemaType = (label as IteratorLabel).schemaType;
+
+  let options = {
+    kind: schemaType.name
+  } as GenericOptions;
+
+  if (schemaType.args) {
+    options.args = schemaType.args;
+  }
+
+  return options;
 }
 
 export function toJSON(schema: Schema): unknown {

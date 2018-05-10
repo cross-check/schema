@@ -28,7 +28,7 @@ const delegate: ReporterDelegate<Buffer, string, TypescriptOptions> = {
     return ";\n";
   },
 
-  openGeneric({ label }): string | void {
+  openGeneric({ type: { label } }): string | void {
     switch (label.type.kind) {
       case "iterator":
       case "list":
@@ -38,7 +38,7 @@ const delegate: ReporterDelegate<Buffer, string, TypescriptOptions> = {
     }
   },
 
-  closeGeneric({ label }): string | void {
+  closeGeneric({ type: { label } }): string | void {
     switch (label.type.kind) {
       case "iterator":
       case "list":
@@ -48,16 +48,24 @@ const delegate: ReporterDelegate<Buffer, string, TypescriptOptions> = {
     }
   },
 
-  emitNamedType({ label, buffer }): void {
+  emitNamedType({ type: { label }, buffer }): void {
     buffer.push(`${label.name}`);
   },
 
-  emitPrimitive({ label }): string {
+  emitPrimitive({ type: { label } }): string {
     return `${label.type.typescript}`;
   },
 
   endPrimitive(): void {
     /* noop */
+  },
+
+  openTemplatedValue() {
+    throw new Error("unimplemented");
+  },
+
+  closeTemplatedValue() {
+    throw new Error("unimplemented");
   }
 };
 

@@ -1,17 +1,9 @@
 import { ValidationBuilder } from "@cross-check/dsl";
-import {
-  BRAND,
-  InlineType,
-  Label,
-  OptionalRefinedType,
-  customPrimitive,
-  label,
-  types
-} from "@cross-check/schema";
+import { Label, Opaque, Type, label, types } from "@cross-check/schema";
 import { unknown } from "ts-std";
 import { format } from "./format";
 
-export type UrlType =
+export type UrlKind =
   | "absolute"
   | "relative"
   | "http"
@@ -19,7 +11,7 @@ export type UrlType =
   | "protocol-relative"
   | "leading-slash";
 
-function formatForType(urlType: UrlType): RegExp {
+function formatForType(urlType: UrlKind): RegExp {
   switch (urlType) {
     case "absolute":
       return /^(https?:)?\/\/[^?#]+(\?[^#]*)?(#.*)?$/;
@@ -36,7 +28,7 @@ function formatForType(urlType: UrlType): RegExp {
   }
 }
 
-export function url(...details: UrlType[]): ValidationBuilder<unknown> {
+export function url(...details: UrlKind[]): ValidationBuilder<unknown> {
   if (details.length === 0) {
     return url("absolute");
   }
@@ -60,29 +52,31 @@ export class Urlish {
   }
 }
 
-class UrlPrimitive implements InlineType {
-  [BRAND]: "PrimitiveType";
+class UrlType extends Opaque {
+  readonly base = types.Text();
 
-  constructor(private options: UrlType[]) {}
+  constructor(private options: UrlKind[]) {
+    super();
+  }
 
   get label(): Label {
     return label({
       name: "Url",
-      args: this.options,
+      args: this.options.length === 0 ? undefined : this.options,
       description: "url",
       typescript: "string"
     });
   }
 
-  validation(): ValidationBuilder<unknown> {
+  baseValidation(): ValidationBuilder<unknown> {
     return url(...this.options);
   }
 
-  serialize(input: Urlish): string {
+  baseSerialize(input: Urlish): string {
     return input.toString();
   }
 
-  parse(input: string): Urlish {
+  baseParse(input: string): Urlish {
     return urlish(input);
   }
 }
@@ -92,6 +86,6 @@ export function urlish(full: string) {
   return new Urlish(result[1], result[2], result[3]);
 }
 
-export function Url(...args: UrlType[]): OptionalRefinedType<InlineType> {
-  return customPrimitive(new UrlPrimitive(args), types.Text())();
+export function Url(...args: UrlKind[]): Type {
+  return new UrlType(args);
 }

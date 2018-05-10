@@ -1,4 +1,6 @@
-import { Dict } from "ts-std";
+import { Dict, JSON } from "ts-std";
+import { Type } from "../fundamental/value";
+import { removeUndefined } from "../utils";
 
 export enum Optionality {
   Required,
@@ -20,25 +22,28 @@ export function requiredLabel<T extends Label>(label: T): T {
   };
 }
 
-export interface Label<T extends TypeLabel = TypeLabel> {
+export type Name = { anonymous: true } | { name: string };
+
+export interface Label<T extends TypeLabel = TypeLabel, N extends Name = Name> {
   type: T;
-  name?: string;
-  optionality: Optionality;
+  templated: boolean;
+  name: N;
 }
 
 export interface NamedLabel<T extends TypeLabel = TypeLabel> {
   type: T;
-  name: string;
-  optionality: Optionality;
+  templated: boolean;
+  name: { name: string };
 }
 
 export interface SchemaType {
   name: string;
-  args: string[];
+  args?: JSON;
 }
 
 export interface PrimitiveLabel {
   kind: "primitive";
+  // TODO: Can this be unified with something else?
   schemaType: SchemaType;
   description: string;
   typescript: string;
@@ -46,24 +51,24 @@ export interface PrimitiveLabel {
 
 export interface ListLabel {
   kind: "list";
-  of: Label;
+  of: Type;
 }
 
 export interface DictionaryLabel {
   kind: "dictionary";
-  members: Dict<Label>;
+  members: Dict<Type>;
 }
 
 export interface PointerLabel {
   kind: "pointer";
   schemaType: SchemaType;
-  of: Label;
+  of: Type;
 }
 
 export interface IteratorLabel {
   kind: "iterator";
   schemaType: SchemaType;
-  of: Label;
+  of: Type;
 }
 
 export type GenericLabel = PointerLabel | IteratorLabel | ListLabel;
@@ -88,18 +93,24 @@ function buildLabel({
   name,
   args,
   typescript,
-  description,
-  optionality = Optionality.None
+  description
 }: LabelOptions): Label<PrimitiveLabel> {
   return {
-    optionality,
+    name: ANONYMOUS,
+    templated: false,
     type: {
       kind: "primitive",
-      schemaType: { name, args: args || [] },
+      schemaType: removeUndefined({ name, args }),
       description: description || typescript,
       typescript
     }
   };
+}
+
+export const ANONYMOUS: Name = { anonymous: true };
+
+export function isAnonymous(name: Name): name is { anonymous: true } {
+  return "anonymous" in name;
 }
 
 export { buildLabel as label };

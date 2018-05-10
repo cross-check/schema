@@ -1,4 +1,4 @@
-import { Schema, types, typescript } from "@cross-check/schema";
+import { Record, types, typescript } from "@cross-check/schema";
 import { ISODate, strip } from "../support";
 import { MediumArticle, SimpleArticle } from "../support/schemas";
 
@@ -89,10 +89,10 @@ QUnit.test("detailed", assert => {
 });
 
 QUnit.test("records", assert => {
-  const RECORDS = new Schema("records", {
-    geo: types.Record({ lat: types.Number(), long: types.Number() }),
+  const RECORDS = Record("records", {
+    geo: types.Required({ lat: types.Float(), long: types.Float() }),
     author: types
-      .Record({
+      .Required({
         first: types.SingleLine(),
         last: types.SingleLine()
       })

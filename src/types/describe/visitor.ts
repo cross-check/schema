@@ -1,68 +1,63 @@
 import { unknown } from "ts-std";
+import { LabelledType, NamedType, Type } from "../fundamental/value";
 import {
+  ANONYMOUS,
   DictionaryLabel,
   GenericLabel,
-  IteratorLabel,
-  Label,
-  ListLabel,
   NamedLabel,
   Optionality,
-  PointerLabel,
   PrimitiveLabel,
-  SchemaType
+  SchemaType,
+  TypeLabel
 } from "./label";
 import { Accumulator, Position, Reporter, genericPosition } from "./reporter";
 
 export interface VisitorDelegate {
-  primitive(label: Label<PrimitiveLabel>, position: Position): unknown;
-  generic(label: Label<GenericLabel>, position: Position): unknown;
-  dictionary(label: Label<DictionaryLabel>, position: Position): unknown;
-  named(label: NamedLabel, position: Position): unknown;
+  primitive(type: LabelledType<PrimitiveLabel>, position: Position): unknown;
+  generic(type: LabelledType<GenericLabel>, position: Position): unknown;
+  dictionary(type: LabelledType<DictionaryLabel>, position: Position): unknown;
+  named(type: NamedType, position: Position): unknown;
 }
 
 export class Visitor {
   constructor(private delegate: VisitorDelegate) {}
 
-  visit(label: Label, position: Position = Position.Any): unknown {
-    if (isNamed(label)) {
-      return this.delegate.named(label, position);
+  visit(type: Type, position: Position = Position.Any): unknown {
+    if (isNamed(type)) {
+      debugger;
+      return this.delegate.named(
+        type as LabelledType<TypeLabel, { name: string }>,
+        position
+      );
     }
+
+    let label = type.label;
 
     switch (label.type.kind) {
       case "primitive": {
         return this.delegate.primitive(
-          label as Label<PrimitiveLabel>,
+          type as LabelledType<PrimitiveLabel>,
           position
         );
       }
 
+      case "pointer":
+      case "iterator":
       case "list": {
-        return this.delegate.generic(label as Label<ListLabel>, position);
+        return this.delegate.generic(
+          type as LabelledType<GenericLabel>,
+          position
+        );
       }
 
       case "dictionary": {
         return this.delegate.dictionary(
-          label as Label<DictionaryLabel>,
+          type as LabelledType<DictionaryLabel>,
           position
         );
       }
-
-      case "pointer": {
-        return this.delegate.generic(label as Label<PointerLabel>, position);
-      }
-
-      case "iterator":
-        return this.delegate.generic(label as Label<IteratorLabel>, position);
     }
   }
-}
-
-export function isRequired(label: Label | Optionality): boolean {
-  let optionality = label.hasOwnProperty("optionality")
-    ? (label as Label).optionality
-    : label;
-
-  return optionality === Optionality.Required;
 }
 
 export interface RecursiveDelegate {
@@ -78,7 +73,8 @@ export type ItemType<D extends RecursiveDelegate> =
   | ReturnType<D["generic"]>
   | ReturnType<D["dictionary"]>;
 
-export class RecursiveVisitor<D extends RecursiveDelegate> {
+export class RecursiveVisitor<D extends RecursiveDelegate>
+  implements VisitorDelegate {
   static build<D extends RecursiveDelegate>(delegate: D): RecursiveVisitor<D> {
     let recursiveVisitor = new RecursiveVisitor(delegate);
     let visitor = new Visitor(recursiveVisitor);
@@ -90,34 +86,39 @@ export class RecursiveVisitor<D extends RecursiveDelegate> {
 
   private constructor(private recursiveDelegate: D) {}
 
-  primitive(label: Label<PrimitiveLabel>): unknown {
-    let type = label.type.schemaType;
-    let required = label.optionality === Optionality.Required;
+  primitive({ label, isRequired }: LabelledType<PrimitiveLabel>): unknown {
+    let schemaType = label.type.schemaType;
 
-    return this.recursiveDelegate.primitive(type, required);
+    return this.recursiveDelegate.primitive(schemaType, isRequired);
   }
 
-  generic(label: Label<GenericLabel>): unknown {
+  generic({ label, isRequired }: LabelledType<GenericLabel>): unknown {
     return this.recursiveDelegate.generic(
       this.visitor.visit(
         label.type.of,
         genericPosition(label.type.kind)
       ) as ItemType<D>,
       label.type,
-      isRequired(label)
+      isRequired
     );
   }
 
-  dictionary(label: Label<DictionaryLabel>, position: Position): unknown {
+  dictionary(
+    { label, isRequired }: LabelledType<DictionaryLabel>,
+    position: Position
+  ): unknown {
     if (position === Position.WholeSchema) {
-      return this.recursiveDelegate.schema(label.type, isRequired(label));
+      return this.recursiveDelegate.schema(label.type, isRequired);
     } else {
-      return this.recursiveDelegate.dictionary(label.type, isRequired(label));
+      return this.recursiveDelegate.dictionary(label.type, isRequired);
     }
   }
 
-  named(label: NamedLabel): unknown {
-    return this.recursiveDelegate.named(label, isRequired(label));
+  named({
+    label,
+    isRequired
+  }: LabelledType<TypeLabel, { name: string }>): unknown {
+    return this.recursiveDelegate.named(label, isRequired);
   }
 
   processDictionary(
@@ -162,52 +163,66 @@ export class StringVisitor<Buffer extends Accumulator<Inner>, Inner, Options>
 
   private constructor(private reporter: Reporter<Buffer, Inner, Options>) {}
 
-  primitive(label: Label<PrimitiveLabel>, position: Position): unknown {
+  primitive(type: LabelledType<PrimitiveLabel>, position: Position): unknown {
     this.reporter.handleEvent(
       "startPrimitiveValue",
-      debug(label),
+      debug(type),
       position,
-      label
+      type
     );
-    this.reporter.handleEvent("primitiveValue", debug(label), position, label);
-    this.reporter.handleEvent(
-      "endPrimitiveValue",
-      debug(label),
-      position,
-      label
-    );
+    this.reporter.handleEvent("primitiveValue", debug(type), position, type);
+    this.reporter.handleEvent("endPrimitiveValue", debug(type), position, type);
   }
 
-  named(label: NamedLabel, position: Position): unknown {
-    this.reporter.handleEvent("startNamedValue", debug(label), position, label);
-    this.reporter.handleEvent("namedValue", debug(label), position, label);
-    this.reporter.handleEvent("endNamedValue", debug(label), position, label);
-  }
+  named(
+    type: LabelledType<TypeLabel, { name: string }>,
+    position: Position
+  ): unknown {
+    let { label } = type;
 
-  generic(label: Label<GenericLabel>, position: Position): unknown {
-    this.reporter.handleEvent(
-      "startGenericValue",
-      debug(label),
-      position,
-      label
-    );
-    this.visitor.visit(label.type.of, genericPosition(label.type.kind));
-    this.reporter.handleEvent("endGenericValue", debug(label), position, label);
-  }
+    this.reporter.handleEvent("startNamedValue", debug(type), position, type);
+    this.reporter.handleEvent("namedValue", debug(type), position, type);
 
-  dictionary(label: Label<DictionaryLabel>, position: Position): Inner {
-    if (position === Position.WholeSchema) {
-      this.reporter.handleEvent("startSchema", debug(label), position, label);
-    } else {
+    if (label.templated) {
       this.reporter.handleEvent(
-        "startDictionary",
-        debug(label),
+        "startTemplatedValue",
+        debug(type),
         position,
-        label
+        type
+      );
+      this.visitor.visit({
+        ...type,
+        label: { ...type.label, name: ANONYMOUS }
+      });
+      this.reporter.handleEvent(
+        "endTemplatedValue",
+        debug(type),
+        position,
+        type
       );
     }
 
-    let dictionary = label.type;
+    this.reporter.handleEvent("endNamedValue", debug(type), position, type);
+  }
+
+  generic(type: LabelledType<GenericLabel>, position: Position): unknown {
+    this.reporter.handleEvent("startGenericValue", debug(type), position, type);
+
+    this.visitor.visit(
+      type.label.type.of,
+      genericPosition(type.label.type.kind)
+    );
+    this.reporter.handleEvent("endGenericValue", debug(type), position, type);
+  }
+
+  dictionary(type: LabelledType<DictionaryLabel>, position: Position): Inner {
+    if (position === Position.WholeSchema) {
+      this.reporter.handleEvent("startSchema", debug(type), position, type);
+    } else {
+      this.reporter.handleEvent("startDictionary", debug(type), position, type);
+    }
+
+    let dictionary = type.label.type;
     let members = dictionary.members;
     let keys = Object.keys(dictionary.members);
     let last = keys.length - 1;
@@ -226,30 +241,39 @@ export class StringVisitor<Buffer extends Accumulator<Inner>, Inner, Options>
           itemPosition = Position.Middle;
       }
 
-      this.reporter.addKey(key, itemPosition, members[key]!.optionality);
+      this.reporter.addKey(
+        key,
+        itemPosition,
+        optionality(members[key]!.isRequired)
+      );
       this.visitor.visit(members[key]!, itemPosition);
       this.reporter.handleEvent(
         "endValue",
-        debug(label),
+        debug(members[key]!),
         itemPosition,
         members[key]!
       );
     });
 
     if (position === Position.WholeSchema) {
-      this.reporter.handleEvent("endSchema", debug(label), position, label);
+      this.reporter.handleEvent("endSchema", debug(type), position, type);
     } else {
-      this.reporter.handleEvent("endDictionary", debug(label), position, label);
+      this.reporter.handleEvent("endDictionary", debug(type), position, type);
     }
 
     return this.reporter.finish();
   }
 }
 
-function debug(label: Label) {
+function optionality(required: boolean): Optionality {
+  return required ? Optionality.Required : Optionality.Optional;
+}
+
+function debug({ label }: Type) {
   return label.type.kind;
 }
 
-function isNamed<T extends Label>(label: T): label is T & { name: string } {
-  return typeof label.name === "string";
+function isNamed(type: Type): boolean {
+  let name = type.label.name;
+  return name && typeof name === "object" && "name" in name;
 }

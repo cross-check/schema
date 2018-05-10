@@ -1,12 +1,5 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
-import {
-  BRAND,
-  InlineType,
-  Label,
-  OptionalRefinedType,
-  label,
-  primitive
-} from "@cross-check/schema";
+import { Label, Scalar, Type, basic, label } from "@cross-check/schema";
 import { unknown } from "ts-std";
 
 function isValidDate(input: string): boolean {
@@ -15,9 +8,7 @@ function isValidDate(input: string): boolean {
   return input === new Date(parsed).toISOString();
 }
 
-class DatePrimitive implements InlineType {
-  [BRAND]: "PrimitiveType";
-
+class DateType extends Scalar {
   get label(): Label {
     return label({
       name: "ISODate",
@@ -26,22 +17,19 @@ class DatePrimitive implements InlineType {
     });
   }
 
-  validation(): ValidationBuilder<unknown> {
-    return validators.is(
-      (v: string): v is string => isValidDate(v),
-      "iso-date"
-    )();
+  baseValidation(): ValidationBuilder<unknown> {
+    return validators.is((v: string): v is string => {
+      return isValidDate(v);
+    }, "iso-date")();
   }
 
-  serialize(input: Date): string {
+  baseSerialize(input: Date): string {
     return input.toISOString();
   }
 
-  parse(input: string): Date {
+  baseParse(input: string): Date {
     return new Date(Date.parse(input));
   }
 }
 
-export const ISODate: () => OptionalRefinedType<InlineType> = primitive(
-  new DatePrimitive()
-);
+export const ISODate: () => Type = basic(DateType);

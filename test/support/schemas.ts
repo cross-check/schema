@@ -1,13 +1,20 @@
-import { Schema, types } from "@cross-check/schema";
+import {
+  Generic,
+  Record,
+  Type,
+  generic,
+  opaque,
+  types
+} from "@cross-check/schema";
 import { ISODate, Url } from "../support";
 
-export const SimpleArticle = new Schema("SimpleArticle", {
+export const SimpleArticle: Record = Record("SimpleArticle", {
   hed: types.SingleLine().required(),
   dek: types.Text(),
   body: types.Text().required()
 });
 
-export const MediumArticle = new Schema("MediumArticle", {
+export const MediumArticle: Record = Record("MediumArticle", {
   hed: types.SingleLine().required(),
   dek: types.Text(),
   body: types.Text().required(),
@@ -28,7 +35,7 @@ export const MediumArticle = new Schema("MediumArticle", {
   )
 });
 
-export const Related = new Schema("Related", {
+export const Related: Record = Record("Related", {
   first: types.SingleLine(),
   last: types.Text(),
 
@@ -36,7 +43,7 @@ export const Related = new Schema("Related", {
   articles: types.hasMany(MediumArticle)
 });
 
-export const Nesting = new Schema("Nesting", {
+export const Nesting: Record = Record("Nesting", {
   people: types
     .List(
       types.Dictionary({
@@ -45,4 +52,30 @@ export const Nesting = new Schema("Nesting", {
       })
     )
     .required()
+});
+
+export const Cursor: () => Type = opaque("Cursor", types.Text());
+
+export const PageInfo: Record = Record("PageInfo", {
+  hasNextPage: types.Boolean().required(),
+  hasPreviousPage: types.Boolean().required()
+});
+
+export const Edge: Generic = generic(T =>
+  Record("Edge", {
+    cursor: Cursor(),
+    node: T
+  })
+);
+
+export const Page: Generic = generic(T =>
+  Record("Page", {
+    edges: Edge(T),
+    pageInfo: PageInfo
+  })
+);
+
+export const Bundle: Record = Record("Bundle", {
+  name: types.SingleLine(),
+  articles: Page(SimpleArticle)
 });

@@ -1,4 +1,4 @@
-import { Schema, describe, types } from "@cross-check/schema";
+import { Record, describe, types } from "@cross-check/schema";
 import { ISODate, strip } from "../support";
 import {
   MediumArticle,
@@ -93,11 +93,11 @@ QUnit.test("detailed", assert => {
   );
 });
 
-QUnit.test("records", assert => {
-  const RECORDS = new Schema("records", {
-    geo: types.Record({ lat: types.Number(), long: types.Number() }),
+QUnit.test("required dictionaries", assert => {
+  const RECORDS: Record = Record("records", {
+    geo: types.Required({ lat: types.Float(), long: types.Float() }),
     author: types
-      .Record({
+      .Required({
         first: types.SingleLine(),
         last: types.SingleLine()
       })
@@ -111,8 +111,8 @@ QUnit.test("records", assert => {
     strip`
       {
         geo?: {
-          lat: <number>,
-          long: <number>
+          lat: <float>,
+          long: <float>
         },
         author: {
           first: <single line string>,
@@ -129,8 +129,8 @@ QUnit.test("records", assert => {
     strip`
       {
         geo?: {
-          lat?: <number>,
-          long?: <number>
+          lat?: <float>,
+          long?: <float>
         },
         author?: {
           first?: <string>,

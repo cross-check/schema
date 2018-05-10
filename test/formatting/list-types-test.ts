@@ -1,4 +1,4 @@
-import { Schema, listTypes, types } from "@cross-check/schema";
+import { Record, listTypes, types } from "@cross-check/schema";
 import { ISODate } from "../support";
 import { MediumArticle, Related, SimpleArticle } from "../support/schemas";
 
@@ -21,11 +21,11 @@ QUnit.test("detailed", assert => {
   ]);
 });
 
-QUnit.test("recods", assert => {
-  const RECORDS = new Schema("records", {
-    geo: types.Record({ lat: types.Number(), long: types.Number() }),
+QUnit.test("records", assert => {
+  const RECORDS = Record("records", {
+    geo: types.Required({ lat: types.Float(), long: types.Float() }),
     author: types
-      .Record({
+      .Required({
         first: types.SingleLine(),
         last: types.SingleLine()
       })
@@ -35,8 +35,8 @@ QUnit.test("recods", assert => {
 
   assert.deepEqual(listTypes(RECORDS), [
     "Dictionary",
+    "Float",
     "ISODate",
-    "Number",
     "SingleLine"
   ]);
 });

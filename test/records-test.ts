@@ -1,4 +1,4 @@
-import { Schema, types } from "@cross-check/schema";
+import { Record, types } from "@cross-check/schema";
 import {
   missingError,
   typeError,
@@ -9,9 +9,9 @@ import {
 QUnit.module("Records");
 
 QUnit.test("optional records (geo)", async assert => {
-  const RECORDS = new Schema("records", {
-    geo: types.Record({ lat: types.Number(), long: types.Number() }),
-    author: types.Record({
+  const RECORDS: Record = Record("records", {
+    geo: types.Required({ lat: types.Float(), long: types.Float() }),
+    author: types.Required({
       first: types.SingleLine(),
       last: types.SingleLine()
     })
@@ -74,8 +74,8 @@ QUnit.test("optional records (geo)", async assert => {
 });
 
 QUnit.test("required records (geo)", async assert => {
-  const RECORDS = new Schema("records", {
-    geo: types.Record({ lat: types.Number(), long: types.Number() }).required()
+  const RECORDS = Record("records", {
+    geo: types.Required({ lat: types.Float(), long: types.Float() }).required()
   });
 
   assert.deepEqual(
@@ -122,9 +122,9 @@ QUnit.test("required records (geo)", async assert => {
     "nested fields in published documents use the schema type (but numbers aren't strings)"
   );
 
-  const STRING_RECORDS = new Schema("string-records", {
+  const STRING_RECORDS = Record("string-records", {
     author: types
-      .Record({
+      .Required({
         first: types.SingleLine(),
         last: types.SingleLine()
       })

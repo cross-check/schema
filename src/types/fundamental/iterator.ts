@@ -1,38 +1,41 @@
-import { IteratorLabel, Label, Optionality, requiredLabel } from "../label";
-import { OptionalRefinedType, Type, strictType } from "../refined";
-import { buildOptional } from "../type";
-import { BRAND } from "../utils";
-import { InlineType } from "./direct-value";
-import { OptionalReferenceImpl, Reference } from "./reference";
+import { JSON, Option } from "ts-std";
+import { ANONYMOUS, IteratorLabel, Label, SchemaType } from "../label";
+import { ReferenceImpl } from "./reference";
+import { Type, baseType } from "./value";
 
-export interface Iterator extends Reference {
-  readonly label: Label<IteratorLabel>;
-}
-
-export class IteratorImpl implements Iterator {
-  [BRAND]: "Pointer";
-
-  constructor(private inner: Type<InlineType>) {}
+export class IteratorImpl extends ReferenceImpl {
+  constructor(
+    private inner: Type,
+    private schemaType: SchemaType,
+    isRequired: boolean,
+    base: Option<Type>
+  ) {
+    super(isRequired, base);
+  }
 
   get label(): Label<IteratorLabel> {
     return {
       type: {
         kind: "iterator",
-        schemaType: {
-          name: "hasMany",
-          args: []
-        },
-        of: requiredLabel(strictType(this.inner).label)
+        schemaType: this.schemaType,
+        of: this.inner.required()
       },
-      optionality: Optionality.None
+      name: ANONYMOUS,
+      templated: false
     };
+  }
+
+  required(isRequired = true): Type {
+    return new IteratorImpl(this.inner, this.schemaType, isRequired, this.base);
   }
 }
 
-export function hasMany(
-  entity: Type<InlineType>
-): OptionalRefinedType<Reference> {
-  let reference = new IteratorImpl(entity);
-  let optional = new OptionalReferenceImpl(reference);
-  return buildOptional({ strict: optional, draft: optional });
+export function hasMany(item: Type, options?: JSON): Type {
+  let schemaType = {
+    name: "hasMany",
+    ...{ args: options }
+  };
+
+  let draftType = new IteratorImpl(baseType(item), schemaType, false, null);
+  return new IteratorImpl(item, schemaType, false, draftType);
 }

@@ -144,6 +144,7 @@ QUnit.test("relationships", assert => {
       last: { type: "Text", required: false },
       person: {
         type: "Pointer",
+        kind: "hasOne",
         required: true,
         of: {
           name: "SimpleArticle",
@@ -153,6 +154,7 @@ QUnit.test("relationships", assert => {
       },
       articles: {
         type: "Iterator",
+        kind: "hasMany",
         required: false,
         of: {
           name: "MediumArticle",
@@ -172,15 +174,17 @@ QUnit.test("relationships", assert => {
       last: { type: "Text", required: false },
       person: {
         type: "Pointer",
+        kind: "hasOne",
         required: false,
         of: {
           name: "SimpleArticle",
           type: "dictionary",
-          required: false
+          required: true
         }
       },
       articles: {
         type: "Iterator",
+        kind: "hasMany",
         required: false,
         of: {
           name: "MediumArticle",

@@ -1,18 +1,25 @@
-import { Label, ReferenceLabel, optionalLabel } from "../label";
-import { BRAND } from "../utils";
-import { OptionalImpl, Required, RequiredImpl } from "./nullable";
+import { ValidationBuilder } from "@cross-check/dsl";
+import { Option, unknown } from "ts-std";
+import { Label, ReferenceLabel } from "../label";
+import { ANY } from "../std/scalars";
+import { Type } from "./value";
 
-export interface Reference {
-  [BRAND]: any;
-  readonly label: Label<ReferenceLabel>;
-}
+export abstract class ReferenceImpl implements Type {
+  abstract label: Label<ReferenceLabel>;
 
-export class OptionalReferenceImpl extends OptionalImpl<Reference> {
-  get label(): Label<ReferenceLabel> {
-    return optionalLabel(this.inner.label);
+  constructor(readonly isRequired: boolean, readonly base: Option<Type>) {}
+
+  abstract required(isRequired?: boolean): Type;
+
+  validation(): ValidationBuilder<unknown> {
+    return ANY;
   }
 
-  required(): Required & Reference {
-    return new RequiredImpl(this.inner);
+  serialize(_input: unknown): unknown {
+    return undefined;
+  }
+
+  parse(_input: unknown): unknown {
+    return undefined;
   }
 }

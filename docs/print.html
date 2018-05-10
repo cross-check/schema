@@ -183,8 +183,8 @@ const schema = new Schema({
   tags: type.List(type.SingleWord()),
 
   geo: Dictionary({
-    lat: type.Number().required(),
-    long: type.Number().required()
+    lat: type.Float().required(),
+    long: type.Float().required()
   })
 });
 </code></pre>
@@ -320,8 +320,8 @@ const Article = new Schema({
 
 const Location = new Schema({
   geo: type.Dictionary({
-    lat: type.Number().required(),
-    long: type.Number().required()
+    lat: type.Float().required(),
+    long: type.Float().required()
   })
 })
 </code></pre>
@@ -455,21 +455,6 @@ interface ValidationError {
 
         </div>
 
-        
-        <!-- Livereload script (if served using the cli tool) -->
-        <script type="text/javascript">
-            var socket = new WebSocket("ws://localhost:3001");
-            socket.onmessage = function (event) {
-                if (event.data === "reload") {
-                    socket.close();
-                    location.reload(true); // force reload from server (not from cache)
-                }
-            };
-
-            window.onbeforeunload = function() {
-                socket.close();
-            }
-        </script>
         
 
         

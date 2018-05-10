@@ -16,7 +16,7 @@ class ListTypes implements RecursiveDelegate {
   }
 
   named({ name }: NamedLabel): Dict {
-    return { [name]: true };
+    return { [name.name]: true };
   }
 
   primitive({ name }: SchemaType): Dict {

@@ -26,7 +26,7 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     }
   },
 
-  openGeneric({ label }) {
+  openGeneric({ type: { label } }) {
     switch (label.type.kind) {
       case "iterator":
         return "has many ";
@@ -44,14 +44,22 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
   openDictionary(): string {
     return `{\n`;
   },
-  emitPrimitive({ label }): string {
+  emitPrimitive({ type: { label } }): string {
     return `<${label.type.description}>`;
   },
   endPrimitive(): void {
     /* noop */
   },
-  emitNamedType({ label }): string {
-    return `${label.name}`;
+  emitNamedType({ type: { label } }): string {
+    return `${label.name.name}`;
+  },
+
+  openTemplatedValue() {
+    throw new Error("unimplemented");
+  },
+
+  closeTemplatedValue() {
+    throw new Error("unimplemented");
   }
 };
 

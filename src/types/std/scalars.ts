@@ -6,14 +6,79 @@ import {
 } from "@cross-check/dsl";
 import { Option, unknown } from "ts-std";
 import { Label, label } from "../describe/label";
-import { InlineType } from "../fundamental/direct-value";
-import { OptionalRefinedType } from "../refined";
-import { customPrimitive, primitive } from "../type";
-import { BRAND } from "../utils";
+import { Type, parse, serialize, validationFor } from "../fundamental/value";
+import { basic } from "../type";
 
-class TextPrimitive implements InlineType {
-  [BRAND]: "PrimitiveType";
+export abstract class Scalar implements Type {
+  readonly base = null;
+  constructor(readonly isRequired: boolean = false) {}
 
+  abstract get label(): Label;
+
+  required(isRequired = true): this {
+    return new (this.constructor as any)(isRequired, this.base);
+  }
+
+  validation(): ValidationBuilder<unknown> {
+    return validationFor(this.baseValidation(), this.isRequired);
+  }
+
+  abstract baseValidation(): ValidationBuilder<unknown>;
+
+  serialize(input: unknown): unknown {
+    return serialize(input, !this.isRequired, value =>
+      this.baseSerialize(value)
+    );
+  }
+
+  baseSerialize(input: unknown): unknown {
+    return input;
+  }
+
+  parse(input: unknown): unknown {
+    return parse(input, !this.isRequired, value => this.baseParse(value));
+  }
+
+  baseParse(input: unknown): unknown {
+    return input;
+  }
+}
+
+export abstract class Opaque implements Type {
+  abstract readonly base: Type;
+
+  constructor(readonly isRequired: boolean = false) {}
+
+  abstract get label(): Label;
+
+  required(isRequired = true): Type {
+    return new (this.constructor as any)(isRequired, this.base);
+  }
+
+  validation(): ValidationBuilder<unknown> {
+    return validationFor(this.baseValidation(), this.isRequired);
+  }
+
+  abstract baseValidation(): ValidationBuilder<unknown>;
+
+  serialize(input: unknown): unknown {
+    return serialize(input, !this.isRequired, () => this.baseSerialize(input));
+  }
+
+  baseSerialize(input: unknown): unknown {
+    return this.base.serialize(input);
+  }
+
+  parse(input: unknown): unknown {
+    return parse(input, !this.isRequired, () => this.baseParse(input));
+  }
+
+  baseParse(input: unknown): unknown {
+    return this.base.parse(input);
+  }
+}
+
+class TextPrimitive extends Scalar {
   get label(): Label {
     return label({
       name: "Text",
@@ -21,55 +86,30 @@ class TextPrimitive implements InlineType {
     });
   }
 
-  validation(): ValidationBuilder<unknown> {
+  baseValidation(): ValidationBuilder<unknown> {
     return validators.isString();
-  }
-
-  serialize(input: string): string {
-    return input;
-  }
-
-  parse(input: string): string {
-    return input;
   }
 }
 
-export const Text: () => OptionalRefinedType<InlineType> = primitive(
-  new TextPrimitive()
-);
+export const Text: () => Type = basic(TextPrimitive);
 
-class NumberPrimitive implements InlineType {
-  [BRAND]: "PrimitiveType";
-
+class FloatPrimitive extends Scalar {
   get label(): Label {
     return label({
-      name: "Number",
+      name: "Float",
+      description: "float",
       typescript: "number"
     });
   }
 
-  validation(): ValidationBuilder<unknown> {
+  baseValidation(): ValidationBuilder<unknown> {
     return validators.isNumber();
-  }
-
-  serialize(input: string): string {
-    return input;
-  }
-
-  parse(input: string): string {
-    return input;
   }
 }
 
-const Num: () => OptionalRefinedType<InlineType> = primitive(
-  new NumberPrimitive()
-);
+export const Float = basic(FloatPrimitive);
 
-export { Num as Number };
-
-class IntegerPrimitive implements InlineType {
-  [BRAND]: "PrimitiveType";
-
+class IntegerPrimitive extends Scalar {
   get label(): Label {
     return label({
       name: "Integer",
@@ -78,7 +118,7 @@ class IntegerPrimitive implements InlineType {
     });
   }
 
-  validation(): ValidationBuilder<unknown> {
+  baseValidation(): ValidationBuilder<unknown> {
     return validators
       .isNumber()
       .andThen(
@@ -88,21 +128,13 @@ class IntegerPrimitive implements InlineType {
         )()
       );
   }
-
-  serialize(input: number): number {
-    return input;
-  }
-
-  parse(input: number): number {
-    return input;
-  }
 }
 
-export const Integer: () => OptionalRefinedType<InlineType> = primitive(
-  new IntegerPrimitive()
-);
+export const Integer = basic(IntegerPrimitive);
 
-class SingleLinePrimitive extends TextPrimitive {
+class SingleLinePrimitive extends Opaque {
+  readonly base = Text();
+
   get label(): Label {
     return label({
       name: "SingleLine",
@@ -111,8 +143,8 @@ class SingleLinePrimitive extends TextPrimitive {
     });
   }
 
-  validation(): ValidationBuilder<unknown> {
-    return super
+  baseValidation(): ValidationBuilder<unknown> {
+    return this.base
       .validation()
       .andThen(
         validators.is(
@@ -123,11 +155,11 @@ class SingleLinePrimitive extends TextPrimitive {
   }
 }
 
-export const SingleLine: () => OptionalRefinedType<
-  InlineType
-> = customPrimitive(new SingleLinePrimitive(), Text());
+export const SingleLine = basic(new SingleLinePrimitive(false));
 
-class SingleWordPrimitive extends TextPrimitive {
+class SingleWordPrimitive extends Opaque {
+  readonly base = Text();
+
   get label(): Label {
     return label({
       name: "SingleWord",
@@ -136,8 +168,8 @@ class SingleWordPrimitive extends TextPrimitive {
     });
   }
 
-  validation(): ValidationBuilder<unknown> {
-    return super
+  baseValidation(): ValidationBuilder<unknown> {
+    return this.base
       .validation()
       .andThen(
         validators.is(
@@ -148,13 +180,25 @@ class SingleWordPrimitive extends TextPrimitive {
   }
 }
 
-export const SingleWord: () => OptionalRefinedType<
-  InlineType
-> = customPrimitive(new SingleWordPrimitive(), Text());
+export const SingleWord = basic(new SingleWordPrimitive(false));
 
-class AnyPrimitive implements InlineType {
-  [BRAND]: "PrimitiveType";
+class BooleanPrimitive extends Scalar {
+  get label(): Label {
+    return label({
+      name: "Boolean",
+      typescript: "boolean"
+    });
+  }
 
+  baseValidation(): ValidationBuilder<unknown> {
+    return validators.isBoolean();
+  }
+}
+
+// tslint:disable-next-line:variable-name
+export const Boolean = basic(BooleanPrimitive);
+
+class AnyPrimitive extends Scalar {
   get label(): Label {
     return label({
       name: "Any",
@@ -163,16 +207,8 @@ class AnyPrimitive implements InlineType {
     });
   }
 
-  validation(): ValidationBuilder<unknown> {
+  baseValidation(): ValidationBuilder<unknown> {
     return builderFor(AnyValidator)();
-  }
-
-  serialize(input: string): string {
-    return input;
-  }
-
-  parse(input: string): string {
-    return input;
   }
 }
 
@@ -184,6 +220,5 @@ class AnyValidator extends ValueValidator<unknown, void> {
   }
 }
 
-export const Any: () => OptionalRefinedType<InlineType> = primitive(
-  new AnyPrimitive()
-);
+export const Any = basic(AnyPrimitive);
+export const ANY = builderFor(AnyValidator)();

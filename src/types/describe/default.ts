@@ -1,8 +1,7 @@
+import { LabelledType, NamedType, Type } from "../fundamental/value";
 import {
   GenericLabel,
   IteratorLabel,
-  Label,
-  NamedLabel,
   Optionality,
   PrimitiveLabel
 } from "./label";
@@ -57,11 +56,11 @@ export class KeyValueReporter<Buffer, Inner, Options> extends ReporterState<
   Inner,
   Options
 > {
-  endValue(position: Position, label: Label): void {
+  endValue(position: Position, { isRequired }: Type): void {
     this.pushStrings(
       this.reporters.closeValue({
         position,
-        optionality: label.optionality,
+        optionality: isRequired ? Optionality.Required : Optionality.Optional,
         ...this.state
       })
     );
@@ -167,13 +166,13 @@ export class StructureReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   structure#closeDictionary
    */
-  endDictionary(position: Position, { optionality }: Label): true | void {
+  endDictionary(position: Position, { isRequired }: Type): true | void {
     this.state.nesting -= 1;
 
     this.pushStrings(
       this.reporters.closeDictionary({
         position,
-        optionality,
+        optionality: isRequired ? Optionality.Required : Optionality.Optional,
         ...this.state
       })
     );
@@ -204,6 +203,26 @@ export class GenericReporter<Buffer, Inner, Options> extends ReporterState<
    */
   startPrimitiveValue(): void {
     this.push(ValueReporter);
+  }
+
+  startTemplatedValue(position: Position, type: LabelledType): void {
+    this.pushStrings(
+      this.reporters.openTemplatedValue({
+        type,
+        position,
+        ...this.state
+      })
+    );
+  }
+
+  endTemplatedValue(position: Position, type: LabelledType): void {
+    this.pushStrings(
+      this.reporters.closeTemplatedValue({
+        type,
+        position,
+        ...this.state
+      })
+    );
   }
 
   startNamedValue(): void {
@@ -237,11 +256,11 @@ export class GenericReporter<Buffer, Inner, Options> extends ReporterState<
     /* noop */
   }
 
-  endGenericValue(position: Position, label: Label<IteratorLabel>): void {
+  endGenericValue(position: Position, type: LabelledType<IteratorLabel>): void {
     this.pushStrings(
       this.reporters.closeGeneric({
         position,
-        label,
+        type,
         ...this.state
       })
     );
@@ -259,8 +278,7 @@ export class GenericReporter<Buffer, Inner, Options> extends ReporterState<
    *   generic#closeList
    */
   endNamedValue(): void {
-    this.pop();
-    assertTop(this.getStack(), ValueReporter);
+    /* noop */
   }
 
   /**
@@ -307,10 +325,13 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   value#primitiveValue
    */
-  primitiveValue(_position: Position, label: Label<PrimitiveLabel>): void {
+  primitiveValue(
+    _position: Position,
+    type: LabelledType<PrimitiveLabel>
+  ): void {
     this.pushStrings(
       this.reporters.emitPrimitive({
-        label,
+        type,
         ...this.state
       })
     );
@@ -348,7 +369,12 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    */
   endDictionary(): void {
     this.pop();
-    assertTop(this.getStack(), KeyValueReporter);
+    assertTop(
+      this.getStack(),
+      GenericReporter,
+      KeyValueReporter,
+      TemplatedValueReporter
+    );
   }
 
   /**
@@ -360,11 +386,14 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   value#openList
    */
-  startGenericValue(position: Position, label: Label<GenericLabel>): void {
+  startGenericValue(
+    position: Position,
+    type: LabelledType<GenericLabel>
+  ): void {
     this.pushStrings(
       this.reporters.openGeneric({
         position,
-        label,
+        type,
         ...this.state
       })
     );
@@ -382,7 +411,7 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    */
   endGenericValue(): true {
     this.pop();
-    assertTop(this.getStack(), StructureReporter);
+    assertTop(this.getStack(), KeyValueReporter, GenericReporter);
 
     return true;
   }
@@ -411,16 +440,25 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    */
   endNamedValue(): void {
     this.pop();
-    assertTop(this.getStack(), StructureReporter, GenericReporter);
+    assertTop(this.getStack(), KeyValueReporter, GenericReporter);
   }
 
-  namedValue(_position: Position, label: NamedLabel): void {
+  namedValue(_position: Position, type: NamedType): void {
     this.pushStrings(
       this.reporters.emitNamedType({
-        label,
+        type,
         ...this.state
       })
     );
+  }
+
+  startTemplatedValue(_position: Position, _type: Type): true | void {
+    this.push(TemplatedValueReporter);
+    return true;
+  }
+
+  endTemplatedValue(position: Position, type: Type): true | void {
+    /* noop */
   }
 
   /**
@@ -432,11 +470,12 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
    * Calls:
    *   None
    */
-  endPrimitiveValue(position: Position, { optionality }: Label): true {
+  endPrimitiveValue(position: Position, { isRequired }: Type): true {
     this.pushStrings(
       this.reporters.endPrimitive({
         position,
-        optionality,
+        optionality:
+          isRequired === true ? Optionality.Required : Optionality.Optional,
         ...this.state
       })
     );
@@ -450,6 +489,42 @@ export class ValueReporter<Buffer, Inner, Options> extends ReporterState<
     this.pop();
     assertTop(this.getStack(), KeyValueReporter);
     return true;
+  }
+}
+
+export class TemplatedValueReporter<
+  Buffer,
+  Inner,
+  Options
+> extends ValueReporter<Buffer, Inner, Options> {
+  startTemplatedValue(position: Position, type: LabelledType): void {
+    this.pushStrings(
+      this.reporters.openTemplatedValue({
+        type,
+        position,
+        ...this.state
+      })
+    );
+
+    this.push(ValueReporter);
+  }
+
+  endDictionary(): true {
+    this.pop();
+    return true;
+  }
+
+  endTemplatedValue(position: Position, type: LabelledType): void {
+    this.pushStrings(
+      this.reporters.closeTemplatedValue({
+        type,
+        position,
+        ...this.state
+      })
+    );
+
+    this.pop();
+    assertTop(this.getStack(), ValueReporter);
   }
 }
 

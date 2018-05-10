@@ -16,9 +16,9 @@ QUnit.test("string serialization", assert => {
 
     strip`
       {
-        "hed": { "type": "SingleLine", "details": [], "required": true },
-        "dek": { "type": "Text", "details": [], "required": false },
-        "body": { "type": "Text", "details": [], "required": true }
+        "hed": { "type": "SingleLine", "required": true },
+        "dek": { "type": "Text", "required": false },
+        "body": { "type": "Text", "required": true }
       }
     `
   );
@@ -28,9 +28,9 @@ QUnit.test("string serialization", assert => {
 
     strip`
       {
-        "hed": { "type": "Text", "details": [], "required": false },
-        "dek": { "type": "Text", "details": [], "required": false },
-        "body": { "type": "Text", "details": [], "required": false }
+        "hed": { "type": "Text", "required": false },
+        "dek": { "type": "Text", "required": false },
+        "body": { "type": "Text", "required": false }
       }
     `
   );

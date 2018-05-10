@@ -1,6 +1,11 @@
 import { graphql } from "@cross-check/schema";
 import { GRAPHQL_SCALAR_MAP, strip } from "../support";
-import { MediumArticle, Related, SimpleArticle } from "../support/schemas";
+import {
+  Bundle,
+  MediumArticle,
+  Related,
+  SimpleArticle
+} from "../support/schemas";
 
 QUnit.module("formatting - graphql");
 
@@ -39,17 +44,17 @@ QUnit.test("detailed", assert => {
     }),
 
     strip`
-    type MediumArticle_author {
+    type MediumArticleAuthor {
       first: SingleLine
       last: SingleLine
     }
     
-    type MediumArticle_geo {
+    type MediumArticleGeo {
       lat: Int!
       long: Int!
     }
     
-    type MediumArticle_contributors {
+    type MediumArticleContributors {
       first: SingleLine
       last: SingleLine
     }
@@ -58,13 +63,13 @@ QUnit.test("detailed", assert => {
       hed: SingleLine!
       dek: String
       body: String!
-      author: MediumArticle_author
+      author: MediumArticleAuthor
       issueDate: ISODate
       canonicalUrl: Url
       tags: [SingleWord!]
       categories: [SingleLine!]!
-      geo: MediumArticle_geo
-      contributors: [MediumArticle_contributors!]
+      geo: MediumArticleGeo
+      contributors: [MediumArticleContributors!]
     }
     `
   );
@@ -80,6 +85,29 @@ QUnit.test("relationships", assert => {
         last: String
         person: SimpleArticle!
         articles: [MediumArticle!]
+      }
+    `
+  );
+});
+
+QUnit.todo("pagination with Relay Cursors", assert => {
+  assert.equal(
+    graphql(Bundle, { name: "Bundle", scalarMap: GRAPHQL_SCALAR_MAP }),
+
+    strip`
+      type SimpleArticleEdge {
+        cursor: Cursor
+        node: SimpleArticle
+      }
+
+      type SimpleArticlePage {
+        edges: SimpleArticleEdge
+        pageInfo: PageInfo
+      }
+
+      type Bundle {
+        name: SingleLine
+        articles: SimpleArticlePage!
       }
     `
   );

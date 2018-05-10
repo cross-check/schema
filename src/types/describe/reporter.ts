@@ -1,10 +1,10 @@
 import { assert, unknown } from "ts-std";
+import { LabelledType, NamedType, Type } from "../fundamental/value";
 import { Buffer as StringBuffer } from "./buffer";
 import {
   DictionaryLabel,
   GenericLabel,
   Label,
-  NamedLabel,
   Optionality,
   PrimitiveLabel
 } from "./label";
@@ -61,20 +61,34 @@ export interface ReporterDelegate<Buffer, Inner, Options> {
   }): Inner | void;
   openGeneric(options: {
     position: Position;
-    label: Label<GenericLabel>;
+    type: LabelledType<GenericLabel>;
     options: Options;
     buffer: Buffer;
     nesting: number;
   }): Inner | void;
   closeGeneric(options: {
     position: Position;
-    label: Label<GenericLabel>;
+    type: LabelledType<GenericLabel>;
+    options: Options;
+    buffer: Buffer;
+    nesting: number;
+  }): Inner | void;
+  openTemplatedValue(options: {
+    position: Position;
+    type: LabelledType;
+    options: Options;
+    buffer: Buffer;
+    nesting: number;
+  }): Inner | void;
+  closeTemplatedValue(options: {
+    position: Position;
+    type: LabelledType;
     options: Options;
     buffer: Buffer;
     nesting: number;
   }): Inner | void;
   emitPrimitive(options: {
-    label: Label<PrimitiveLabel>;
+    type: LabelledType<PrimitiveLabel>;
     options: Options;
     buffer: Buffer;
     nesting: number;
@@ -87,7 +101,7 @@ export interface ReporterDelegate<Buffer, Inner, Options> {
     nesting: number;
   }): Inner | void;
   emitNamedType(options: {
-    label: NamedLabel;
+    type: NamedType;
     options: Options;
     buffer: Buffer;
     nesting: number;
@@ -134,13 +148,13 @@ export class Reporter<Buffer extends Accumulator<Inner>, Inner, Options> {
 
   handleEvent<
     K extends keyof ReporterState<Buffer, Inner, Options>,
-    L extends Label
-  >(name: K, debugArgs: string, position: Position, label: L) {
+    T extends Type
+  >(name: K, debugArgs: string, position: Position, type: T) {
     let repeat: true | void = true;
 
     while (repeat) {
       repeat = ifHasEvent(this.state, name, debugArgs, state => {
-        return (state[name] as any)(position, label);
+        return (state[name] as any)(position, type);
       });
     }
   }
@@ -244,20 +258,18 @@ export abstract class ReporterState<Buffer, Inner, Options> {
 
     console.log("<- State", debugStack(this.stack));
 
-    return;
+    // return;
     // @ts-ignore
     console.log(`<- nesting: ${this.state.nesting}`);
 
     let buffer = this.state.buffer;
 
-    // prettier-ignore
-    console.log(
-      (buffer instanceof StringBuffer
-        // @ts-ignore 
-        ? buffer.done()
-        : JSON.stringify(this.state.buffer)
-      ).replace(/\n/g, "\\n\n")
-    );
+    if (typeof buffer.done === "function") {
+      console.log(buffer.done().replace(/\n/g, "\\n\n"));
+    } else {
+      console.log(JSON.stringify(this.state.buffer).replace(/\n/g, "\\n\n"));
+    }
+
     console.groupEnd();
     // tslint:enable:no-console
   }
@@ -275,7 +287,10 @@ export abstract class ReporterState<Buffer, Inner, Options> {
     label: Label<DictionaryLabel>
   ): true | void;
 
-  startSchema?(position: Position, label: Label<DictionaryLabel>): true | void;
+  startSchema?(
+    position: Position,
+    type: LabelledType<DictionaryLabel>
+  ): true | void;
 
   addKey?(
     key: string,
@@ -283,34 +298,43 @@ export abstract class ReporterState<Buffer, Inner, Options> {
     optionality: Optionality
   ): true | void;
 
-  endValue?(position: Position, label: Label): true | void;
+  endValue?(position: Position, type: LabelledType): true | void;
 
   endDictionary?(
     position: Position,
-    label: Label<DictionaryLabel>
+    type: LabelledType<DictionaryLabel>
   ): true | void;
 
-  endSchema?(position: Position, label: Label<DictionaryLabel>): true | void;
+  endSchema?(
+    position: Position,
+    type: LabelledType<DictionaryLabel>
+  ): true | void;
 
   startGenericValue?(
     position: Position,
-    label: Label<GenericLabel>
+    type: LabelledType<GenericLabel>
   ): true | void;
-  endGenericValue?(position: Position, label: Label<GenericLabel>): true | void;
+  endGenericValue?(
+    position: Position,
+    type: LabelledType<GenericLabel>
+  ): true | void;
 
   startPrimitiveValue?(
     position: Position,
-    label: Label<PrimitiveLabel>
+    type: LabelledType<PrimitiveLabel>
   ): true | void;
-  primitiveValue?(position: Position, label: Label<PrimitiveLabel>): void;
+  primitiveValue?(position: Position, type: LabelledType<PrimitiveLabel>): void;
   endPrimitiveValue?(
     position: Position,
-    label: Label<PrimitiveLabel>
+    type: LabelledType<PrimitiveLabel>
   ): true | void;
 
-  startNamedValue?(position: Position, label: NamedLabel): void;
-  namedValue?(position: Position, type: NamedLabel): void;
-  endNamedValue?(position: Position, label: NamedLabel): true | void;
+  startNamedValue?(position: Position, type: NamedType): void;
+  namedValue?(position: Position, type: NamedType): void;
+  endNamedValue?(position: Position, type: NamedType): true | void;
+
+  startTemplatedValue?(position: Position, type: LabelledType): void;
+  endTemplatedValue?(position: Position, typed: LabelledType): true | void;
 }
 
 function ifHasEvent<

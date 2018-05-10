@@ -1,6 +1,5 @@
 import { Buffer } from "../buffer";
 import formatter, { Formatter } from "../formatter";
-import { Optionality } from "../label";
 import { Position, ReporterDelegate } from "../reporter";
 
 const delegate: ReporterDelegate<Buffer, string, void> = {
@@ -28,27 +27,37 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     }
   },
 
-  openGeneric({ label }): string {
+  openGeneric({ type: { label } }): string {
     return `{ "type": "${label.type.kind}", "of": `;
   },
   closeGeneric(): string {
     return " }";
   },
 
-  emitNamedType({ label, buffer }): void {
+  emitNamedType({ type: { label }, buffer }): void {
     buffer.push(`${label.name}`);
   },
 
-  emitPrimitive({ label }): string {
-    let { name, args } = label.type.schemaType;
-    let isRequired = label.optionality === Optionality.Required;
-    return `{ "type": ${JSON.stringify(name)}, "details": ${JSON.stringify(
-      args
-    )}, "required": ${isRequired} }`;
+  emitPrimitive({ type, buffer }): void {
+    let { name, args } = type.label.type.schemaType;
+    buffer.push(`{ "type": ${JSON.stringify(name)}, `);
+    if (args !== undefined) {
+      buffer.push(`"details": ${JSON.stringify(args)}, `);
+    }
+
+    buffer.push(`"required": ${type.isRequired} }`);
   },
 
   endPrimitive(): void {
     /* noop */
+  },
+
+  openTemplatedValue() {
+    throw new Error("unimplemented");
+  },
+
+  closeTemplatedValue() {
+    throw new Error("unimplemented");
   }
 };
 

@@ -1,7 +1,8 @@
 import { Dict, Option } from "ts-std";
+import { titleize } from "../../utils";
 import formatter, { Schema } from "../formatter";
+import { Name, Optionality, isAnonymous } from "../label";
 import { Accumulator, ReporterDelegate } from "../reporter";
-import { isRequired } from "../visitor";
 
 class TypeBuffer {
   private buf: string;
@@ -23,6 +24,7 @@ class BufferStack implements Accumulator<string> {
   types: TypeBuffer[] = [];
   finished: TypeBuffer[] = [];
   key: Option<string> = null;
+  template: Option<string> = null;
 
   get currentName(): string {
     return this.types[this.types.length - 1].name;
@@ -46,8 +48,15 @@ class BufferStack implements Accumulator<string> {
     this.push(`${suffix}\n`);
   }
 
+  pushTemplate(typeName: string): void {
+    this.template = typeName;
+    this.pushType(typeName);
+    this.key = null;
+  }
+
   pushSubType(): void {
-    let typeName = `${this.currentName}_${this.key}`;
+    if (this.template) return;
+    let typeName = `${this.currentName}${titleize(this.key!)}`;
     this.push(typeName);
     this.pushType(typeName);
     this.key = null;
@@ -57,10 +66,15 @@ class BufferStack implements Accumulator<string> {
     this.push("}");
     let type = this.types.pop();
     this.finished.push(type!);
+    this.template = null;
   }
 
   done(): string {
-    return this.finished.map(f => f.done()).join("\n\n");
+    let finished = this.finished.map(f => f.done()).join("\n\n");
+    if (this.types.length) {
+      finished += `\n\n${this.types.map(t => t.done()).join("\n\n")}`;
+    }
+    return finished;
   }
 }
 
@@ -82,10 +96,10 @@ const delegate: ReporterDelegate<BufferStack, string, GraphqlOptions> = {
     buffer.doneType();
   },
   closeValue({ buffer, optionality }): void {
-    buffer.doneValue(isRequired(optionality));
+    buffer.doneValue(optionality === Optionality.Required);
   },
 
-  openGeneric({ buffer, label }): void {
+  openGeneric({ buffer, type: { label } }): void {
     switch (label.type.kind) {
       case "iterator":
       case "list":
@@ -95,7 +109,7 @@ const delegate: ReporterDelegate<BufferStack, string, GraphqlOptions> = {
       default:
     }
   },
-  closeGeneric({ buffer, label }): void {
+  closeGeneric({ buffer, type: { label } }): void {
     switch (label.type.kind) {
       case "iterator":
       case "list":
@@ -106,11 +120,16 @@ const delegate: ReporterDelegate<BufferStack, string, GraphqlOptions> = {
     }
   },
 
-  emitNamedType({ label, buffer }): void {
-    buffer.push(`${label.name}`);
+  openTemplatedValue({ buffer, type: { label } }): void {
+    buffer.pushTemplate(nameToString(label.name));
+  },
+  closeTemplatedValue(): void {},
+
+  emitNamedType({ type: { label }, buffer }): void {
+    buffer.push(`${nameToString(label.name)}`);
   },
 
-  emitPrimitive({ label, buffer, options }): void {
+  emitPrimitive({ type: { label }, buffer, options }): void {
     buffer.push(`${options.scalarMap[label.type.schemaType.name]}`);
   },
   endPrimitive(): void {
@@ -127,3 +146,11 @@ export const graphql: ((
   schema: Schema,
   options: GraphqlOptions
 ) => string) = formatter(delegate, BufferStack);
+
+function nameToString(name: Name): string {
+  if (isAnonymous(name)) {
+    return "anonymous";
+  } else {
+    return name.name;
+  }
+}

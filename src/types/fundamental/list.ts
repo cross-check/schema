@@ -1,97 +1,66 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
-import { unknown } from "ts-std";
-import { Label, Optionality, requiredLabel } from "../label";
-import {
-  OptionalRefinedType,
-  RequiredRefinedType,
-  Type,
-  draftType,
-  strictType
-} from "../refined";
-import { buildRequiredType } from "../type";
-import { BRAND } from "../utils";
-import {
-  InlineType,
-  OptionalDirectValueImpl,
-  RequiredDirectValueImpl
-} from "./direct-value";
-import { Optional } from "./nullable";
+import { Option, unknown } from "ts-std";
+import { ANONYMOUS, Label } from "../label";
+import { maybe } from "../utils";
+import { Type, baseType, parse, serialize } from "./value";
 
 const isPresentArray = validators.is(
   (value: unknown[]): value is unknown[] => value.length > 0,
   "present-array"
 );
 
-export interface PrimitiveArray extends InlineType {
-  readonly label: Label;
-  validation(): ValidationBuilder<unknown>;
-
-  serialize(input: any[]): any;
-  parse(input: any[]): any;
-}
-
-class PrimitiveArrayImpl implements PrimitiveArray {
-  [BRAND]: "Primitive";
-
-  constructor(private itemType: InlineType) {}
+class ArrayImpl implements Type {
+  constructor(
+    private itemType: Type,
+    readonly isRequired: boolean,
+    readonly base: Option<Type>
+  ) {}
 
   get label(): Label {
     return {
       type: {
         kind: "list",
-        of: requiredLabel(this.itemType.label)
+        of: this.itemType.required()
       },
-      optionality: Optionality.None
+      name: ANONYMOUS,
+      templated: false
     };
   }
 
+  required(isRequired = true): Type {
+    return new ArrayImpl(this.itemType, isRequired, this.base);
+  }
+
   serialize(js: any[]): any {
-    return js.map(item => this.itemType.serialize(item));
+    let itemType = this.itemType;
+
+    return serialize(js, !this.isRequired, () =>
+      js.map(item => itemType.serialize(item))
+    );
   }
 
   parse(wire: any[]): any {
-    return wire.map(item => this.itemType.parse(item));
-  }
+    let itemType = this.itemType;
 
-  validation(): ValidationBuilder<unknown> {
-    return validators.array(this.itemType.validation());
-  }
-}
-
-class PrimitiveArrayType implements OptionalRefinedType<PrimitiveArray> {
-  readonly [BRAND] = "OptionalRefinedType";
-
-  readonly strict: Optional<PrimitiveArray> & PrimitiveArray;
-  readonly draft: Optional<PrimitiveArray> & PrimitiveArray;
-
-  constructor(private item: Type<PrimitiveArray>) {
-    this.strict = new OptionalDirectValueImpl(strictType(item));
-    this.draft = new OptionalDirectValueImpl(draftType(item));
-  }
-
-  required(): RequiredRefinedType<PrimitiveArray> {
-    return buildRequiredType<PrimitiveArray>(
-      new RequiredPrimitiveArray(strictType(this.item)),
-      this.draft
+    return parse(wire, !this.isRequired, () =>
+      wire.map(item => itemType.parse(item))
     );
   }
-}
 
-class RequiredPrimitiveArray extends RequiredDirectValueImpl {
   validation(): ValidationBuilder<unknown> {
-    return super.validation().andThen(isPresentArray());
+    let validator = validators.array(this.itemType.validation());
+    if (this.isRequired) {
+      return validators
+        .isPresent()
+        .andThen(validator)
+        .andThen(isPresentArray());
+    } else {
+      return maybe(validator);
+    }
   }
 }
 
-export function List(
-  item: Type<InlineType>
-): OptionalRefinedType<PrimitiveArray> {
-  let strict = new PrimitiveArrayImpl(strictType(item));
-  let draft = new PrimitiveArrayImpl(draftType(item));
-
-  return new PrimitiveArrayType({
-    [BRAND]: "RequiredRefinedType" as "RequiredRefinedType",
-    strict,
-    draft
-  });
+export function List(item: Type): Type {
+  let draftType = new ArrayImpl(baseType(item), false, null);
+  return new ArrayImpl(item, false, draftType);
 }

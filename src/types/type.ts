@@ -1,17 +1,4 @@
-import {
-  InlineType,
-  OptionalDirectValueImpl
-} from "./fundamental/direct-value";
-import { Optional } from "./fundamental/nullable";
-import { Value } from "./fundamental/value";
-import {
-  OptionalRefinedType,
-  RequiredRefinedType,
-  Type,
-  draftType,
-  strictType
-} from "./refined";
-import { BRAND, isBranded } from "./utils";
+import { Type } from "./fundamental/value";
 
 /**
  * Internals Vocabulary:
@@ -49,78 +36,32 @@ import { BRAND, isBranded } from "./utils";
  *   in-progress work in a user interface.s
  */
 
-export function requiredType<Inner extends Value>(
-  primitive: Type<Inner>
-): RequiredRefinedType<Inner> {
-  if (isBranded<OptionalRefinedType<Inner>>(primitive, "OptionalRefinedType")) {
-    return primitive.required();
-  } else {
-    return primitive as RequiredRefinedType<Inner>;
-  }
+export interface TypeClass {
+  new (): Type;
 }
 
-/* @internal */
-export function buildRequiredType<Inner extends Value>(
-  strict: Inner,
-  draft: Inner
-): RequiredRefinedType<Inner> {
-  return {
-    [BRAND]: "RequiredRefinedType",
-    strict,
-    draft
+export type TypeDescription = TypeClass | Type;
+
+export function generic(callback: (...T: Type[]) => Type): Generic {
+  return (...descs: TypeDescription[]) => {
+    let types = descs.map(constructType);
+    return callback(...types);
   };
 }
 
-export function buildOptionalValue(
-  t: Type<InlineType>
-): OptionalRefinedType<InlineType> {
-  let strict = new OptionalDirectValueImpl(strictType(t));
-  let draft = new OptionalDirectValueImpl(draftType(t));
+export type Generic = (...T: TypeDescription[]) => Type;
 
-  return buildOptional({ strict, draft });
+export function basic(desc: TypeDescription): () => Type {
+  let type = constructType(desc);
+  return () => type;
 }
 
-export function buildOptional<Inner extends Value>({
-  strict,
-  draft
-}: {
-  strict: Optional<Inner> & Inner;
-  draft: Optional<Inner> & Inner;
-}): OptionalRefinedType<Inner> {
-  return {
-    [BRAND]: "OptionalRefinedType",
-    required() {
-      return buildRequiredType<Inner>(strict.required(), draft);
-    },
-
-    strict,
-    draft
-  };
+export function opaque(_name: string, type: TypeDescription): () => Type {
+  // TODO: This should be a named type
+  let t = constructType(type);
+  return () => t;
 }
 
-export { buildOptionalValue as optional };
-
-function newValue(p: InlineType): () => OptionalRefinedType<InlineType> {
-  let optional = buildOptionalValue({
-    [BRAND]: "RequiredRefinedType" as "RequiredRefinedType",
-    strict: p,
-    draft: p
-  });
-
-  return () => optional;
-}
-
-export { newValue as primitive };
-
-export function customPrimitive(
-  strict: InlineType,
-  draft: OptionalRefinedType<InlineType>
-): () => OptionalRefinedType<InlineType> {
-  let optional = buildOptionalValue({
-    [BRAND]: "RequiredRefinedType" as "RequiredRefinedType",
-    strict,
-    draft: draft.required().strict
-  });
-
-  return () => optional;
+function constructType(desc: TypeDescription): Type {
+  return typeof desc === "function" ? new desc() : desc;
 }

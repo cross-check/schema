@@ -1,6 +1,8 @@
+import { JSON as JSONValue } from "ts-std";
+import { LabelledType } from "../../fundamental/value";
 import { Buffer } from "../buffer";
 import formatter, { Formatter } from "../formatter";
-import { Label, Optionality, PrimitiveLabel } from "../label";
+import { Optionality, PrimitiveLabel } from "../label";
 import { Position, ReporterDelegate } from "../reporter";
 
 const delegate: ReporterDelegate<Buffer, string, void> = {
@@ -29,7 +31,7 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     }
   },
 
-  openGeneric({ buffer, label }): void {
+  openGeneric({ buffer, type: { label } }): void {
     switch (label.type.kind) {
       case "iterator":
         buffer.push("hasMany(");
@@ -39,13 +41,16 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
         break;
       case "pointer":
         buffer.push("hasOne(");
+        break;
+      default:
+        throw new Error("unreacahable");
     }
   },
-  closeGeneric({ buffer, position, label }): void {
+  closeGeneric({ buffer, position, type }): void {
     buffer.push(")");
 
     if (
-      label.optionality === Optionality.Required &&
+      type.isRequired &&
       position !== Position.ListItem &&
       position !== Position.PointerItem
     ) {
@@ -53,8 +58,8 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     }
   },
 
-  emitNamedType({ label, buffer }): void {
-    buffer.push(`${label.name}`);
+  emitNamedType({ type: { label }, buffer }): void {
+    buffer.push(`${label.name.name}`);
   },
 
   closeValue({ position }): string | void {
@@ -65,8 +70,8 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     }
   },
 
-  emitPrimitive({ label }): string {
-    return formatType(label);
+  emitPrimitive({ type }): string {
+    return formatType(type);
   },
 
   endPrimitive({ position, optionality }): string | void {
@@ -77,14 +82,32 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     ) {
       return `.required()`;
     }
+  },
+
+  openTemplatedValue() {
+    throw new Error("unimplemented");
+  },
+
+  closeTemplatedValue() {
+    throw new Error("unimplemented");
   }
 };
 
-function formatType(label: Label<PrimitiveLabel>) {
-  let { name, args } = label.type.schemaType;
-  let out = `${name}(${args.join(", ")})`;
+function formatType(type: LabelledType<PrimitiveLabel>) {
+  let { name, args } = type.label.type.schemaType;
+  let out = `${name}(${formatArgs(args)})`;
 
   return out;
+}
+
+function formatArgs(args: JSONValue | undefined): string {
+  if (Array.isArray(args)) {
+    return JSON.stringify(args).slice(1, -1);
+  } else if (args === undefined) {
+    return "";
+  } else {
+    return JSON.stringify(args);
+  }
 }
 
 function pad(size: number): string {

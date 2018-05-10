@@ -1,105 +1,83 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
-import { Dict, JSONObject, dict, entries, unknown } from "ts-std";
-import { DictionaryLabel, Label, Optionality } from "../label";
-import { OptionalRefinedType, Type, draftType, strictType } from "../refined";
-import { optional } from "../type";
-import { BRAND } from "../utils";
-import { InlineType } from "./direct-value";
-import { Value } from "./value";
+import { Dict, Option, dict, entries, unknown } from "ts-std";
+import { ANONYMOUS, DictionaryLabel, Label } from "../label";
+import { Type, baseType, parse, serialize, validationFor } from "./value";
 
-function buildSchemaValidation(desc: Dict<Value>): ValidationBuilder<unknown> {
+function buildSchemaValidation(desc: Dict<Type>): ValidationBuilder<unknown> {
   let obj = dict<ValidationBuilder<unknown>>();
 
   for (let [key, value] of entries(desc)) {
-    if (isInlineType(value)) {
-      obj[key] = value!.validation();
-    }
+    obj[key] = value!.validation();
   }
 
   return validators.object(obj);
 }
 
-export class PrimitiveDictionary implements InlineType {
-  [BRAND]: "PrimitiveType";
+export interface DictionaryType extends Type {
+  label: Label<DictionaryLabel>;
+}
 
-  constructor(private inner: Dict<Value>) {}
+export class DictionaryImpl implements DictionaryType {
+  constructor(
+    protected inner: Dict<Type>,
+    readonly isRequired: boolean,
+    readonly base: Option<DictionaryType>
+  ) {}
+
+  required(isRequired = true): Type {
+    return new DictionaryImpl(this.inner, isRequired, this.base);
+  }
 
   get label(): Label<DictionaryLabel> {
-    let members = dict<Label>();
-
-    for (let [key, value] of entries(this.inner)) {
-      members[key] = value!.label;
-    }
-
     return {
-      type: { kind: "dictionary", members },
-      optionality: Optionality.None
+      type: { kind: "dictionary", members: this.inner },
+      templated: false,
+      name: ANONYMOUS
     };
   }
 
-  serialize(js: Dict<unknown>): JSONObject {
-    let out: JSONObject = {};
+  serialize(js: Dict): Option<Dict> | undefined {
+    return serialize(js, !this.isRequired, () => {
+      let out: Dict = {};
 
-    for (let [key, value] of entries(this.inner)) {
-      if (isInlineType(value)) {
-        out[key] = value!.serialize(js[key]);
+      for (let [key, value] of entries(this.inner)) {
+        out[key] = value!.serialize(js[key]!);
       }
-    }
 
-    return out;
+      return out;
+    });
   }
 
-  parse(wire: JSONObject): Dict<unknown> {
-    let out: Dict<unknown> = {};
+  parse(wire: Dict): Option<Dict> | undefined {
+    return parse(wire, !this.isRequired, () => {
+      let out: Dict = {};
 
-    for (let [key, value] of entries(this.inner)) {
-      if (isInlineType(value)) {
-        out[key] = value!.parse(wire[key]!);
+      for (let [key, value] of entries(this.inner)) {
+        out[key] = value!.parse(wire[key]);
       }
-    }
 
-    return out;
+      return out;
+    });
   }
 
   validation(): ValidationBuilder<unknown> {
-    return buildSchemaValidation(this.inner);
+    let validation = buildSchemaValidation(this.inner);
+
+    return validationFor(validation, this.isRequired);
   }
 }
 
-function isInlineType(type: Value | undefined): type is InlineType {
-  if (type === undefined) return false;
-  return typeof (type as any).serialize === "function";
-}
+export type ConstructDictionary = (d: Dict<Type>) => DictionaryType;
 
-/* @internal */
-export function dictionaryType(inner: Dict<Type>): Type<InlineType> {
-  let customDict = dict<Value>();
+export function Dictionary(members: Dict<Type>): DictionaryType {
+  let strictDict = dict<Type>();
+  let draftDict = dict<Type>();
 
-  for (let [key, value] of entries(inner)) {
-    if (isInlineType(strictType(value!))) {
-      customDict[key] = strictType(value!);
-    }
+  for (let [key, value] of entries(members)) {
+    strictDict[key] = value!;
+    draftDict[key] = baseType(value!).required(false);
   }
 
-  let strict = new PrimitiveDictionary(customDict);
-
-  let baseDict = dict<Value>();
-
-  for (let [key, value] of entries(inner)) {
-    baseDict[key] = draftType(value!);
-  }
-
-  let draft = new PrimitiveDictionary(baseDict);
-
-  return {
-    [BRAND]: "RequiredRefinedType" as "RequiredRefinedType",
-    strict,
-    draft
-  };
-}
-
-export function Dictionary(
-  properties: Dict<Type<InlineType>>
-): OptionalRefinedType<InlineType> {
-  return optional(dictionaryType(properties));
+  let draft = new DictionaryImpl(draftDict, false, null);
+  return new DictionaryImpl(strictDict, false, draft);
 }

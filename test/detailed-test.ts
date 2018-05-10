@@ -71,7 +71,7 @@ QUnit.test("published documents", async assert => {
       categories: ["single"]
     }),
     [typeError("string", "tags.0"), typeError("string", "tags.2")],
-    "if an optional field is present, it must match the schame"
+    "if an optional field is present, it must match the schema"
   );
 });
 

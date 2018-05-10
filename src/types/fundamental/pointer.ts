@@ -1,64 +1,51 @@
-import { Label, Optionality, PointerLabel, requiredLabel } from "../label";
-import { OptionalRefinedType, Type, strictType } from "../refined";
-import { buildOptional } from "../type";
-import { BRAND } from "../utils";
-import { InlineType } from "./direct-value";
-import { OptionalImpl, Required } from "./nullable";
-import { Reference } from "./reference";
+import { ValidationBuilder } from "@cross-check/dsl";
+import { Option, unknown } from "ts-std";
+import { ANONYMOUS, Label, PointerLabel } from "../label";
+import { ANY } from "../std/scalars";
+import { ReferenceImpl } from "./reference";
+import { Type, baseType } from "./value";
 
-export interface Pointer extends Reference {
-  readonly label: Label<PointerLabel>;
-}
-
-export class PointerImpl implements Pointer {
-  [BRAND]: "Pointer";
-
-  constructor(private inner: Type<InlineType>) {}
+export class PointerImpl extends ReferenceImpl {
+  constructor(
+    private inner: Type,
+    readonly isRequired: boolean,
+    readonly base: Option<Type>
+  ) {
+    super(isRequired, base);
+  }
 
   get label(): Label<PointerLabel> {
     return {
       type: {
         kind: "pointer",
         schemaType: {
-          name: "hasOne",
-          args: []
+          name: "hasOne"
         },
-        of: strictType(this.inner).label
+        of: this.inner
       },
-      optionality: Optionality.None
+      name: ANONYMOUS,
+      templated: false
     };
   }
-}
 
-export class RequiredPointerImpl implements Pointer, Required {
-  [BRAND]: "Required";
+  required(isRequired = true): Type {
+    return new PointerImpl(this.inner, isRequired, this.base);
+  }
 
-  constructor(private inner: Pointer) {}
+  validation(): ValidationBuilder<unknown> {
+    return ANY;
+  }
 
-  get label(): Label<PointerLabel> {
-    let type = this.inner.label.type;
-    let of = this.inner.label.type.of;
+  serialize(): undefined {
+    return;
+  }
 
-    return {
-      type: {
-        ...type,
-        of: requiredLabel(of)
-      },
-      optionality: Optionality.Required
-    };
+  parse(): undefined {
+    return;
   }
 }
 
-export class OptionalPointerImpl extends OptionalImpl<Pointer> {
-  required(): Required & Pointer {
-    return new RequiredPointerImpl(this.inner);
-  }
-}
-
-export function hasOne(
-  entity: Type<InlineType>
-): OptionalRefinedType<Reference> {
-  let reference = new PointerImpl(entity);
-  let optional = new OptionalPointerImpl(reference);
-  return buildOptional({ strict: optional, draft: optional });
+export function hasOne(entity: Type): Type {
+  let base = new PointerImpl(baseType(entity).required(), false, null);
+  return new PointerImpl(entity.required(), false, base);
 }

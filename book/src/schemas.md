@@ -28,8 +28,8 @@ const schema = new Schema({
   tags: type.List(type.SingleWord()),
 
   geo: Dictionary({
-    lat: type.Number().required(),
-    long: type.Number().required()
+    lat: type.Float().required(),
+    long: type.Float().required()
   })
 });
 ```
@@ -203,8 +203,8 @@ import { Schema, type } from "@cross-check/schema";
 
 const Location = new Schema({
   geo: type.Dictionary({
-    lat: type.Number().required(),
-    long: type.Number().required()
+    lat: type.Float().required(),
+    long: type.Float().required()
   })
 })
 ```

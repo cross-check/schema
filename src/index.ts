@@ -1,18 +1,18 @@
-export { default as Schema } from "./schema";
-export { BRAND } from "./types/utils";
+export { Record } from "./record";
 export {
+  Opaque,
+  Scalar,
   Dictionary,
   Label,
   List,
-  Record,
+  Required,
   Interface,
   label,
   describe,
   RecursiveVisitor
 } from "./types";
-export { InlineType } from "./types/fundamental/direct-value";
+export { Type } from "./types/fundamental/value";
 export * from "./types/describe/formatters";
 import * as types from "./types";
 export * from "./types/type";
-export { OptionalRefinedType } from "./types/refined";
 export { types };

@@ -1,6 +1,6 @@
 export * from "./std/scalars";
 export * from "./fundamental";
-export { Record } from "./std/record";
+export { Required } from "./std/required";
 export { Interface } from "./utils";
 export {
   Label,
