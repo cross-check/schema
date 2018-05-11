@@ -4,7 +4,6 @@ import { Buffer as StringBuffer } from "./buffer";
 import {
   DictionaryLabel,
   GenericLabel,
-  Label,
   Optionality,
   PrimitiveLabel
 } from "./label";
@@ -89,6 +88,7 @@ export interface ReporterDelegate<Buffer, Inner, Options> {
   }): Inner | void;
   emitPrimitive(options: {
     type: LabelledType<PrimitiveLabel>;
+    position: Position;
     options: Options;
     buffer: Buffer;
     nesting: number;
@@ -118,6 +118,7 @@ export class Reporter<Buffer extends Accumulator<Inner>, Inner, Options> {
 
   constructor(
     StateClass: ReporterStateConstructor<Buffer, Inner, Options>,
+    private ValueState: ReporterStateConstructor<Buffer, Inner, Options>,
     reporters: ReporterDelegate<Buffer, Inner, Options>,
     options: Options,
     private buffer: Buffer
@@ -144,6 +145,14 @@ export class Reporter<Buffer extends Accumulator<Inner>, Inner, Options> {
     this.repeatEvent("addKey", name, state =>
       state.addKey(name, position, optionality)
     );
+  }
+
+  startType(): void {
+    this.state.push(this.ValueState);
+  }
+
+  endType(): void {
+    this.state.pop();
   }
 
   handleEvent<
@@ -236,7 +245,8 @@ export abstract class ReporterState<Buffer, Inner, Options> {
 
   push(StateClass: ReporterStateConstructor<Buffer, Inner, Options>): void {
     // this.debug(`Pushing ${StateClass.name}`);
-    this.stack.push(new StateClass(this.state, this.stack, this.reporters));
+    let state = new StateClass(this.state, this.stack, this.reporters);
+    this.stack.push(state);
   }
 
   pop(): void {
@@ -262,7 +272,7 @@ export abstract class ReporterState<Buffer, Inner, Options> {
     // @ts-ignore
     console.log(`<- nesting: ${this.state.nesting}`);
 
-    let buffer = this.state.buffer;
+    let buffer = this.state.buffer as { done?(): string };
 
     if (typeof buffer.done === "function") {
       console.log(buffer.done().replace(/\n/g, "\\n\n"));
@@ -282,9 +292,22 @@ export abstract class ReporterState<Buffer, Inner, Options> {
     // tslint:enable:no-console
   }
 
+  enter(): void {
+    /* noop */
+  }
+
+  exit(): void {
+    /* noop */
+  }
+
   startDictionary?(
     position: Position,
-    label: Label<DictionaryLabel>
+    type: LabelledType<DictionaryLabel>
+  ): true | void;
+
+  startDictionaryBody?(
+    position: Position,
+    type: LabelledType<DictionaryLabel>
   ): true | void;
 
   startSchema?(
@@ -301,6 +324,11 @@ export abstract class ReporterState<Buffer, Inner, Options> {
   endValue?(position: Position, type: LabelledType): true | void;
 
   endDictionary?(
+    position: Position,
+    type: LabelledType<DictionaryLabel>
+  ): true | void;
+
+  endDictionaryBody?(
     position: Position,
     type: LabelledType<DictionaryLabel>
   ): true | void;
@@ -330,8 +358,11 @@ export abstract class ReporterState<Buffer, Inner, Options> {
   ): true | void;
 
   startNamedValue?(position: Position, type: NamedType): void;
+
+  startType?(position: Position, type: LabelledType): void;
+  endType?(position: Position, type: LabelledType): true | void;
+
   namedValue?(position: Position, type: NamedType): void;
-  endNamedValue?(position: Position, type: NamedType): true | void;
 
   startTemplatedValue?(position: Position, type: LabelledType): void;
   endTemplatedValue?(position: Position, typed: LabelledType): true | void;

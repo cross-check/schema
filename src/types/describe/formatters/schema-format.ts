@@ -70,17 +70,15 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     }
   },
 
-  emitPrimitive({ type }): string {
-    return formatType(type);
-  },
+  emitPrimitive({ type, position, buffer }): void {
+    buffer.push(formatType(type));
 
-  endPrimitive({ position, optionality }): string | void {
     if (
-      optionality === Optionality.Required &&
+      type.isRequired &&
       position !== Position.ListItem &&
       position !== Position.IteratorItem
     ) {
-      return `.required()`;
+      buffer.push(`.required()`);
     }
   },
 
