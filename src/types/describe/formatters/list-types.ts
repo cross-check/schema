@@ -3,8 +3,9 @@ import { Schema } from "../formatter";
 import {
   DictionaryLabel,
   GenericLabel,
+  Label,
   NamedLabel,
-  SchemaType
+  typeNameOf
 } from "../label";
 import { RecursiveDelegate, RecursiveVisitor } from "../visitor";
 
@@ -16,15 +17,15 @@ class ListTypes implements RecursiveDelegate {
   }
 
   named({ name }: NamedLabel): Dict {
-    return { [name.name]: true };
-  }
-
-  primitive({ name }: SchemaType): Dict {
     return { [name]: true };
   }
 
-  generic(of: Dict, label: GenericLabel): Dict {
-    let kind = label.kind;
+  primitive({ name }: Label): Dict {
+    return { [typeNameOf(name)]: true };
+  }
+
+  generic(of: Dict, label: Label<GenericLabel>): Dict {
+    let kind = label.type.kind;
     let name = `${kind[0].toUpperCase()}${kind.slice(1)}`;
     return { ...of, [name]: true };
   }

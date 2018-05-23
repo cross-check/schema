@@ -1,6 +1,6 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import { Dict, Option, dict, entries, unknown } from "ts-std";
-import { ANONYMOUS, DictionaryLabel, Label } from "../label";
+import { DictionaryLabel, Label, typeNameOf } from "../label";
 import { Type, baseType, parse, serialize, validationFor } from "./value";
 
 function buildSchemaValidation(desc: Dict<Type>): ValidationBuilder<unknown> {
@@ -20,19 +20,31 @@ export interface DictionaryType extends Type {
 export class DictionaryImpl implements DictionaryType {
   constructor(
     protected inner: Dict<Type>,
+    private typeName: string | undefined,
     readonly isRequired: boolean,
     readonly base: Option<DictionaryType>
   ) {}
 
   required(isRequired = true): Type {
-    return new DictionaryImpl(this.inner, isRequired, this.base);
+    return new DictionaryImpl(this.inner, this.typeName, isRequired, this.base);
+  }
+
+  named(arg: Option<string>): Type {
+    let name = `${arg}${typeNameOf(this.typeName)}`;
+    return new DictionaryImpl(
+      this.inner,
+      arg === null ? undefined : name,
+      this.isRequired,
+      this.base
+    );
   }
 
   get label(): Label<DictionaryLabel> {
     return {
       type: { kind: "dictionary", members: this.inner },
-      templated: false,
-      name: ANONYMOUS
+      description: "dictionary",
+      name: this.typeName,
+      registeredName: this.typeName === undefined ? undefined : this.typeName
     };
   }
 
@@ -78,6 +90,6 @@ export function Dictionary(members: Dict<Type>): DictionaryType {
     draftDict[key] = baseType(value!).required(false);
   }
 
-  let draft = new DictionaryImpl(draftDict, false, null);
-  return new DictionaryImpl(strictDict, false, draft);
+  let draft = new DictionaryImpl(draftDict, undefined, false, null);
+  return new DictionaryImpl(strictDict, undefined, false, draft);
 }

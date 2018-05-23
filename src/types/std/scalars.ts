@@ -11,12 +11,22 @@ import { basic } from "../type";
 
 export abstract class Scalar implements Type {
   readonly base = null;
-  constructor(readonly isRequired: boolean = false) {}
+  constructor(
+    readonly isRequired: boolean = false,
+    protected typeName?: string
+  ) {}
 
   abstract get label(): Label;
 
   required(isRequired = true): this {
-    return new (this.constructor as any)(isRequired, this.base);
+    return new (this.constructor as any)(isRequired);
+  }
+
+  named(arg: Option<string>): this {
+    return new (this.constructor as any)(
+      this.isRequired,
+      arg === null ? undefined : arg
+    );
   }
 
   validation(): ValidationBuilder<unknown> {
@@ -47,12 +57,19 @@ export abstract class Scalar implements Type {
 export abstract class Opaque implements Type {
   abstract readonly base: Type;
 
-  constructor(readonly isRequired: boolean = false) {}
+  constructor(readonly isRequired = false, readonly isTemplated = false) {}
 
   abstract get label(): Label;
 
   required(isRequired = true): Type {
-    return new (this.constructor as any)(isRequired, this.base);
+    return new (this.constructor as any)(isRequired, this.isTemplated);
+  }
+
+  named(arg: Option<string>): Type {
+    return new (this.constructor as any)(
+      this.isRequired,
+      arg === null ? undefined : arg
+    );
   }
 
   validation(): ValidationBuilder<unknown> {
@@ -82,6 +99,7 @@ class TextPrimitive extends Scalar {
   get label(): Label {
     return label({
       name: "Text",
+      description: "string",
       typescript: "string"
     });
   }

@@ -1,4 +1,5 @@
 import { Type } from "./fundamental/value";
+import { typeNameOf } from "./label";
 
 /**
  * Internals Vocabulary:
@@ -45,7 +46,11 @@ export type TypeDescription = TypeClass | Type;
 export function generic(callback: (...T: Type[]) => Type): Generic {
   return (...descs: TypeDescription[]) => {
     let types = descs.map(constructType);
-    return callback(...types);
+    let type = callback(...types);
+
+    let name = descs.map(d => typeNameOf(constructType(d).label.name)).join("");
+
+    return type.named(name);
   };
 }
 

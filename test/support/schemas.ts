@@ -72,7 +72,7 @@ export const Page: Generic = generic(T =>
   Record("Page", {
     edges: Edge(T),
     pageInfo: PageInfo
-  })
+  }).required()
 );
 
 export const Bundle: Record = Record("Bundle", {

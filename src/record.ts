@@ -8,19 +8,11 @@ import { DictionaryLabel, Label } from "./types/label";
 
 class BaseRecordImpl extends DictionaryImpl implements BaseRecord {
   constructor(readonly name: string, inner: Dict<Type>, required: boolean) {
-    super(inner, required, null);
+    super(inner, name, required, null);
   }
 
   required(isRequired = true): Type {
     return new BaseRecordImpl(this.name, this.inner, isRequired);
-  }
-
-  get label(): Label<DictionaryLabel> {
-    return {
-      ...super.label,
-      templated: false,
-      name: { name: this.name }
-    };
   }
 
   validate(obj: Dict, env: Environment): Task<ValidationError[]> {
@@ -48,8 +40,7 @@ class RecordImpl extends BaseRecordImpl implements Record {
   get label(): Label<DictionaryLabel> {
     return {
       ...super.label,
-      templated: false,
-      name: { name: this.name }
+      name: this.name
     };
   }
 

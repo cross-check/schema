@@ -1,6 +1,6 @@
 import { ValidationBuilder } from "@cross-check/dsl";
 import { Option, unknown } from "ts-std";
-import { ANONYMOUS, Label, PointerLabel } from "../label";
+import { Label, PointerLabel, typeNameOf } from "../label";
 import { ANY } from "../std/scalars";
 import { ReferenceImpl } from "./reference";
 import { Type, baseType } from "./value";
@@ -8,8 +8,9 @@ import { Type, baseType } from "./value";
 export class PointerImpl extends ReferenceImpl {
   constructor(
     private inner: Type,
-    readonly isRequired: boolean,
-    readonly base: Option<Type>
+    isRequired: boolean,
+    readonly base: Option<Type>,
+    private name: string | undefined
   ) {
     super(isRequired, base);
   }
@@ -18,18 +19,24 @@ export class PointerImpl extends ReferenceImpl {
     return {
       type: {
         kind: "pointer",
-        schemaType: {
-          name: "hasOne"
-        },
         of: this.inner
       },
-      name: ANONYMOUS,
-      templated: false
+      name: "hasOne",
+      description: `has one ${typeNameOf(this.inner.label.name)}`
     };
   }
 
   required(isRequired = true): Type {
-    return new PointerImpl(this.inner, isRequired, this.base);
+    return new PointerImpl(this.inner, isRequired, this.base, this.name);
+  }
+
+  named(arg: Option<string>): Type {
+    return new PointerImpl(
+      this.inner,
+      this.isRequired,
+      this.base,
+      arg === null ? undefined : arg
+    );
   }
 
   validation(): ValidationBuilder<unknown> {
@@ -46,6 +53,11 @@ export class PointerImpl extends ReferenceImpl {
 }
 
 export function hasOne(entity: Type): Type {
-  let base = new PointerImpl(baseType(entity).required(), false, null);
-  return new PointerImpl(entity.required(), false, base);
+  let base = new PointerImpl(
+    baseType(entity).required(),
+    false,
+    null,
+    undefined
+  );
+  return new PointerImpl(entity.required(), false, base, undefined);
 }

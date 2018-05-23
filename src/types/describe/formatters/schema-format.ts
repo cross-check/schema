@@ -2,7 +2,7 @@ import { JSON as JSONValue } from "ts-std";
 import { LabelledType } from "../../fundamental/value";
 import { Buffer } from "../buffer";
 import formatter, { Formatter } from "../formatter";
-import { Optionality, PrimitiveLabel } from "../label";
+import { PrimitiveLabel, typeNameOf } from "../label";
 import { Position, ReporterDelegate } from "../reporter";
 
 const delegate: ReporterDelegate<Buffer, string, void> = {
@@ -19,11 +19,11 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
   emitKey({ key, nesting }): string {
     return `${pad(nesting * 2)}${key}: `;
   },
-  closeDictionary({ buffer, nesting, position, optionality }): string | void {
+  closeDictionary({ buffer, nesting, position, required }): string | void {
     buffer.push(`${pad(nesting * 2)}})`);
 
     if (
-      optionality === Optionality.Required &&
+      required &&
       position !== Position.ListItem &&
       position !== Position.PointerItem
     ) {
@@ -59,7 +59,7 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
   },
 
   emitNamedType({ type: { label }, buffer }): void {
-    buffer.push(`${label.name.name}`);
+    buffer.push(`${label.name}`);
   },
 
   closeValue({ position }): string | void {
@@ -80,20 +80,12 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
     ) {
       buffer.push(`.required()`);
     }
-  },
-
-  openTemplatedValue() {
-    throw new Error("unimplemented");
-  },
-
-  closeTemplatedValue() {
-    throw new Error("unimplemented");
   }
 };
 
 function formatType(type: LabelledType<PrimitiveLabel>) {
-  let { name, args } = type.label.type.schemaType;
-  let out = `${name}(${formatArgs(args)})`;
+  let { name, args } = type.label;
+  let out = `${typeNameOf(name)}(${formatArgs(args)})`;
 
   return out;
 }

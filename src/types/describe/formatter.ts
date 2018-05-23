@@ -1,5 +1,4 @@
 import { DictionaryType } from "../fundamental/dictionary";
-import { SchemaReporter, ValueReporter } from "./default";
 import { DictionaryLabel, Label } from "./label";
 import { Accumulator, Position, Reporter, ReporterDelegate } from "./reporter";
 import { StringVisitor } from "./visitor";
@@ -19,8 +18,6 @@ export default function formatter<Buffer extends Accumulator<string>, Options>(
 ): Formatter<Options, string> {
   return ((type: DictionaryType, options?: Options): string => {
     let reporter = new Reporter<Buffer, string, typeof options>(
-      SchemaReporter,
-      ValueReporter,
       delegate,
       options,
       new BufferClass()

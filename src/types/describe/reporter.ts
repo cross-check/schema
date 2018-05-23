@@ -1,12 +1,6 @@
-import { assert, unknown } from "ts-std";
-import { LabelledType, NamedType, Type } from "../fundamental/value";
+import { LabelledType, Type } from "../fundamental/value";
 import { Buffer as StringBuffer } from "./buffer";
-import {
-  DictionaryLabel,
-  GenericLabel,
-  Optionality,
-  PrimitiveLabel
-} from "./label";
+import { DictionaryLabel, GenericLabel, PrimitiveLabel } from "./label";
 
 export interface Reporters<Buffer, Inner, Options> {
   Value: ReporterStateConstructor<Buffer, Inner, Options>;
@@ -33,14 +27,14 @@ export interface ReporterDelegate<Buffer, Inner, Options> {
   emitKey(options: {
     key: string;
     position: Position;
-    optionality: Optionality;
+    required: boolean;
     options: Options;
     buffer: Buffer;
     nesting: number;
   }): Inner | void;
   closeValue(options: {
     position: Position;
-    optionality: Optionality;
+    required: boolean;
     options: Options;
     buffer: Buffer;
     nesting: number;
@@ -53,7 +47,7 @@ export interface ReporterDelegate<Buffer, Inner, Options> {
   }): Inner | void;
   closeDictionary(options: {
     position: Position;
-    optionality: Optionality;
+    required: boolean;
     options: Options;
     buffer: Buffer;
     nesting: number;
@@ -72,20 +66,6 @@ export interface ReporterDelegate<Buffer, Inner, Options> {
     buffer: Buffer;
     nesting: number;
   }): Inner | void;
-  openTemplatedValue(options: {
-    position: Position;
-    type: LabelledType;
-    options: Options;
-    buffer: Buffer;
-    nesting: number;
-  }): Inner | void;
-  closeTemplatedValue(options: {
-    position: Position;
-    type: LabelledType;
-    options: Options;
-    buffer: Buffer;
-    nesting: number;
-  }): Inner | void;
   emitPrimitive(options: {
     type: LabelledType<PrimitiveLabel>;
     position: Position;
@@ -93,15 +73,8 @@ export interface ReporterDelegate<Buffer, Inner, Options> {
     buffer: Buffer;
     nesting: number;
   }): Inner | void;
-  endPrimitive(options: {
-    position: Position;
-    optionality: Optionality;
-    options: Options;
-    buffer: Buffer;
-    nesting: number;
-  }): Inner | void;
   emitNamedType(options: {
-    type: NamedType;
+    type: LabelledType;
     options: Options;
     buffer: Buffer;
     nesting: number;
@@ -113,82 +86,136 @@ export interface Accumulator<Inner> {
 }
 
 export class Reporter<Buffer extends Accumulator<Inner>, Inner, Options> {
-  private stack: Array<ReporterState<Buffer, Inner, Options>> = [];
-  private pad = 0;
+  private state: { buffer: Buffer; nesting: number; options: Options };
 
   constructor(
-    StateClass: ReporterStateConstructor<Buffer, Inner, Options>,
-    private ValueState: ReporterStateConstructor<Buffer, Inner, Options>,
-    reporters: ReporterDelegate<Buffer, Inner, Options>,
+    private reporters: ReporterDelegate<Buffer, Inner, Options>,
     options: Options,
-    private buffer: Buffer
+    buffer: Buffer
   ) {
-    this.stack.push(
-      new StateClass(
-        { buffer: this.buffer, nesting: this.pad, options },
-        this.stack,
-        reporters
-      )
-    );
+    this.state = { buffer, nesting: 0, options };
   }
 
   finish(): Inner {
-    return this.buffer.done();
+    return this.state.buffer.done();
   }
 
-  get state(): ReporterState<Buffer, Inner, Options> {
-    assert(this.stack.length > 0, "Cannot get state from an empty stack");
-    return this.stack[this.stack.length - 1];
+  pushStrings(value: Inner | void) {
+    let { buffer } = this.state;
+
+    if (buffer instanceof StringBuffer && typeof value === "string") {
+      buffer.push(value);
+    }
   }
 
-  addKey(name: string, position: Position, optionality: Optionality): void {
-    this.repeatEvent("addKey", name, state =>
-      state.addKey(name, position, optionality)
+  startDictionary(position: Position): void {
+    this.state.nesting += 1;
+
+    this.pushStrings(
+      this.reporters.openDictionary({
+        position,
+        ...this.state
+      })
     );
   }
 
-  startType(): void {
-    this.state.push(this.ValueState);
+  endDictionary(position: Position, { isRequired }: Type): void {
+    this.state.nesting -= 1;
+
+    this.pushStrings(
+      this.reporters.closeDictionary({
+        position,
+        required: isRequired,
+        ...this.state
+      })
+    );
   }
 
-  endType(): void {
-    this.state.pop();
+  startSchema(): void {
+    this.state.nesting += 1;
+
+    this.pushStrings(
+      this.reporters.openSchema({
+        ...this.state
+      })
+    );
   }
 
-  handleEvent<
-    K extends keyof ReporterState<Buffer, Inner, Options>,
-    T extends Type
-  >(name: K, debugArgs: string, position: Position, type: T) {
-    let repeat: true | void = true;
-
-    while (repeat) {
-      repeat = ifHasEvent(this.state, name, debugArgs, state => {
-        return (state[name] as any)(position, type);
-      });
-    }
+  endSchema(): void {
+    this.pushStrings(
+      this.reporters.closeSchema({
+        ...this.state
+      })
+    );
   }
 
-  private repeatEvent<
-    K extends keyof ReporterState<Buffer, Inner, Options>,
-    C extends (
-      state: ReporterState<Buffer, Inner, Options> &
-        Required<Pick<ReporterState<Buffer, Inner, Options>, K>>
-    ) => true | void
-  >(name: K, debugArgs: unknown, callback: C) {
-    let repeat: true | void = true;
+  addKey(key: string, position: Position, { isRequired }: LabelledType): void {
+    this.pushStrings(
+      this.reporters.emitKey({
+        key,
+        position,
+        required: isRequired,
+        ...this.state
+      })
+    );
+  }
 
-    while (repeat) {
-      repeat = ifHasEvent(this.state, name, debugArgs, state => {
-        return callback(state);
-      });
-    }
+  endValue(position: Position, { isRequired }: Type): void {
+    this.pushStrings(
+      this.reporters.closeValue({
+        position,
+        required: isRequired,
+        ...this.state
+      })
+    );
+  }
+
+  endGenericValue(position: Position, type: LabelledType<GenericLabel>): void {
+    this.pushStrings(
+      this.reporters.closeGeneric({
+        position,
+        type,
+        ...this.state
+      })
+    );
+  }
+
+  startGenericValue(
+    position: Position,
+    type: LabelledType<GenericLabel>
+  ): void {
+    this.pushStrings(
+      this.reporters.openGeneric({
+        position,
+        type,
+        ...this.state
+      })
+    );
+  }
+
+  primitiveValue(position: Position, type: LabelledType<PrimitiveLabel>): void {
+    this.pushStrings(
+      this.reporters.emitPrimitive({
+        type,
+        position,
+        ...this.state
+      })
+    );
+  }
+
+  namedValue(_position: Position, type: LabelledType): void {
+    this.pushStrings(
+      this.reporters.emitNamedType({
+        type,
+        ...this.state
+      })
+    );
   }
 }
 
 export interface ReporterStateConstructor<Buffer, Inner, Options> {
   new (
     state: { buffer: Buffer; nesting: number; options: Options },
-    stack: Array<ReporterState<Buffer, Inner, Options>>,
     reporters: ReporterDelegate<Buffer, Inner, Options>
   ): ReporterState<Buffer, Inner, Options>;
 }
@@ -235,24 +262,8 @@ export interface InnerState<Buffer, Options> {
 export abstract class ReporterState<Buffer, Inner, Options> {
   constructor(
     protected state: InnerState<Buffer, Options>,
-    private stack: Array<ReporterState<Buffer, Inner, Options>>,
     protected reporters: ReporterDelegate<Buffer, Inner, Options>
   ) {}
-
-  getStack(): Array<ReporterState<Buffer, Inner, Options>> {
-    return this.stack;
-  }
-
-  push(StateClass: ReporterStateConstructor<Buffer, Inner, Options>): void {
-    // this.debug(`Pushing ${StateClass.name}`);
-    let state = new StateClass(this.state, this.stack, this.reporters);
-    this.stack.push(state);
-  }
-
-  pop(): void {
-    this.stack.pop();
-    // this.debug(`Popped ${last!.constructor.name}`);
-  }
 
   pushStrings(value: Inner | void) {
     let { buffer } = this.state;
@@ -265,8 +276,6 @@ export abstract class ReporterState<Buffer, Inner, Options> {
   debug(operation: string): void {
     // tslint:disable:no-console
     console.group(`${operation}`);
-
-    console.log("<- State", debugStack(this.stack));
 
     // return;
     // @ts-ignore
@@ -286,8 +295,6 @@ export abstract class ReporterState<Buffer, Inner, Options> {
 
   debugEnd() {
     // tslint:disable:no-console
-    console.log("-> State", debugStack(this.stack));
-
     console.groupEnd();
     // tslint:enable:no-console
   }
@@ -305,21 +312,12 @@ export abstract class ReporterState<Buffer, Inner, Options> {
     type: LabelledType<DictionaryLabel>
   ): true | void;
 
-  startDictionaryBody?(
-    position: Position,
-    type: LabelledType<DictionaryLabel>
-  ): true | void;
-
   startSchema?(
     position: Position,
     type: LabelledType<DictionaryLabel>
   ): true | void;
 
-  addKey?(
-    key: string,
-    position: Position,
-    optionality: Optionality
-  ): true | void;
+  addKey?(key: string, position: Position, required: boolean): true | void;
 
   endValue?(position: Position, type: LabelledType): true | void;
 
@@ -347,84 +345,12 @@ export abstract class ReporterState<Buffer, Inner, Options> {
     type: LabelledType<GenericLabel>
   ): true | void;
 
-  startPrimitiveValue?(
-    position: Position,
-    type: LabelledType<PrimitiveLabel>
-  ): true | void;
   primitiveValue?(position: Position, type: LabelledType<PrimitiveLabel>): void;
-  endPrimitiveValue?(
-    position: Position,
-    type: LabelledType<PrimitiveLabel>
-  ): true | void;
-
-  startNamedValue?(position: Position, type: NamedType): void;
+  namedValue?(position: Position, type: LabelledType): void;
 
   startType?(position: Position, type: LabelledType): void;
   endType?(position: Position, type: LabelledType): true | void;
 
-  namedValue?(position: Position, type: NamedType): void;
-
   startTemplatedValue?(position: Position, type: LabelledType): void;
   endTemplatedValue?(position: Position, typed: LabelledType): true | void;
-}
-
-function ifHasEvent<
-  Buffer,
-  Inner,
-  Options,
-  K extends keyof ReporterState<Buffer, Inner, Options>,
-  C extends (
-    state: ReporterState<Buffer, Inner, Options> &
-      Required<Pick<ReporterState<Buffer, Inner, Options>, K>>
-  ) => any
->(
-  state: ReporterState<Buffer, Inner, Options>,
-  name: K,
-  debugArgs: unknown,
-  callback: C
-): ReturnType<C> | void {
-  if (hasEvent(state, name)) {
-    try {
-      state.debug(
-        `Dispatching ${name} (${JSON.stringify(debugArgs)}) for ${
-          state.constructor.name
-        }`
-      );
-      return callback(state);
-    } finally {
-      state.debugEnd();
-    }
-  } else {
-    try {
-      state.debug(`Unimplemented ${name}`);
-      throw new Error(
-        `Unimplemented ${name} event in ${
-          state.constructor.name
-        } (could be a bug)`
-      );
-    } finally {
-      state.debugEnd();
-    }
-  }
-}
-
-function hasEvent<
-  Buffer,
-  Inner,
-  Options,
-  K extends keyof ReporterState<Buffer, Inner, Options>
->(
-  state: ReporterState<Buffer, Inner, Options>,
-  key: K
-): state is ReporterState<Buffer, Inner, Options> &
-  Required<Pick<ReporterState<Buffer, Inner, Options>, K>> {
-  return key in state && typeof (state as any)[key] === "function";
-}
-
-function debugStack(states: Array<ReporterState<any, any, any>>) {
-  return states
-    .map(s => {
-      return s.constructor.name.replace(/Reporter$/, "");
-    })
-    .join(", ");
 }

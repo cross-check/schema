@@ -3,10 +3,10 @@ import { Schema } from "../formatter";
 import {
   DictionaryLabel,
   GenericLabel,
-  IteratorLabel,
+  Label,
   NamedLabel,
-  PointerLabel,
-  SchemaType
+  PrimitiveLabel,
+  typeNameOf
 } from "../label";
 import { RecursiveDelegate, RecursiveVisitor } from "../visitor";
 
@@ -55,38 +55,46 @@ class JSONFormatter implements RecursiveDelegate {
     return members;
   }
 
-  primitive({ name: type, args }: SchemaType, required: boolean): Primitive {
+  templated() {
+    throw new Error("unimplemented");
+  }
+
+  primitive(
+    { name, args }: Label<PrimitiveLabel>,
+    required: boolean
+  ): Primitive {
     if (args !== undefined) {
-      return { type, args, required };
+      return { type: typeNameOf(name), args, required };
     } else {
-      return { type, required };
+      return { type: typeNameOf(name), required };
     }
   }
 
   named(label: NamedLabel, required: boolean): unknown {
     return {
       type: label.type.kind,
-      name: label.name.name,
+      name: label.name,
       required
     };
   }
 
   generic<L extends GenericLabel>(
     entity: Item,
-    label: L,
+    label: Label<L>,
     required: boolean
   ): Generic {
     let type: "Pointer" | "List" | "Iterator";
     let options: Option<{ kind?: string; args?: JSON }> = {};
+    let kind = label.type.kind;
 
-    if (label.kind === "iterator") {
+    if (kind === "iterator") {
       type = "Iterator";
-      options = referenceOptions(label as IteratorLabel);
-    } else if (label.kind === "list") {
+      options = referenceOptions(label);
+    } else if (kind === "list") {
       type = "List";
-    } else if (label.kind === "pointer") {
+    } else if (kind === "pointer") {
       type = "Pointer";
-      options = referenceOptions(label as IteratorLabel);
+      options = referenceOptions(label);
     } else {
       throw new Error("unreachable");
     }
@@ -109,16 +117,14 @@ class JSONFormatter implements RecursiveDelegate {
 }
 
 function referenceOptions(
-  label: PointerLabel | IteratorLabel
+  label: Label<GenericLabel>
 ): Pick<GenericReference, "kind" | "args"> {
-  let schemaType = (label as IteratorLabel).schemaType;
-
   let options = {
-    kind: schemaType.name
+    kind: label.name
   } as GenericOptions;
 
-  if (schemaType.args) {
-    options.args = schemaType.args;
+  if (label.args) {
+    options.args = label.args;
   }
 
   return options;

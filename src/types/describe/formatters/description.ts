@@ -1,17 +1,19 @@
 import { Buffer } from "../buffer";
 import formatter, { Formatter } from "../formatter";
-import { Optionality } from "../label";
+import { isPrimitive } from "../label";
 import { Position, ReporterDelegate } from "../reporter";
 
 const delegate: ReporterDelegate<Buffer, string, void> = {
   openSchema() {
     return `{\n`;
   },
+
   closeSchema() {
     return `}`;
   },
-  emitKey({ key, optionality, nesting }): string {
-    return `${pad(nesting * 2)}${formattedKey(key, optionality)}: `;
+
+  emitKey({ key, required, nesting }): string {
+    return `${pad(nesting * 2)}${formattedKey(key, required)}: `;
   },
 
   closeDictionary({ nesting }): string {
@@ -44,30 +46,27 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
   openDictionary(): string {
     return `{\n`;
   },
+
   emitPrimitive({ type: { label } }): string {
-    return `<${label.type.description}>`;
-  },
-  endPrimitive(): void {
-    /* noop */
-  },
-  emitNamedType({ type: { label } }): string {
-    return `${label.name.name}`;
+    return `<${label.description}>`;
   },
 
-  openTemplatedValue() {
-    throw new Error("unimplemented");
-  },
+  emitNamedType({ type }): string {
+    let { label } = type;
 
-  closeTemplatedValue() {
-    throw new Error("unimplemented");
+    if (isPrimitive(type)) {
+      return `<${type.label.description}>`;
+    } else {
+      return `${label.name}`;
+    }
   }
 };
 
-function formattedKey(key: string, optionality: Optionality): string {
-  if (optionality === Optionality.Optional) {
-    return `${key}?`;
-  } else {
+function formattedKey(key: string, required: boolean): string {
+  if (required) {
     return key;
+  } else {
+    return `${key}?`;
   }
 }
 

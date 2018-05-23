@@ -1,6 +1,6 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import { Option, unknown } from "ts-std";
-import { Label, Name, TypeLabel } from "../label";
+import { Label, NamedLabel, TypeLabel } from "../label";
 import { maybe } from "../utils";
 
 export const Pass = Symbol();
@@ -12,22 +12,20 @@ export interface Type {
   readonly isRequired: boolean;
 
   required(isRequired?: boolean): Type;
+  named(arg: Option<string>): Type;
   validation(): ValidationBuilder<unknown>;
   serialize(input: unknown): unknown | Pass;
   parse(input: unknown): unknown | Pass;
 }
 
-export interface LabelledType<
-  L extends TypeLabel = TypeLabel,
-  N extends Name = Name
-> extends Type {
-  readonly label: Label<L, N>;
+export interface LabelledType<L extends TypeLabel = TypeLabel> extends Type {
+  readonly label: Label<L>;
 }
 
-export type NamedType<L extends TypeLabel = TypeLabel> = LabelledType<
-  L,
-  { name: string }
->;
+export interface NamedType<L extends TypeLabel = TypeLabel>
+  extends LabelledType<L> {
+  label: NamedLabel<L>;
+}
 
 export function baseType(type: Type): Type {
   if (type.base === null) {

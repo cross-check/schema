@@ -1,12 +1,13 @@
 import { JSON, Option } from "ts-std";
-import { ANONYMOUS, IteratorLabel, Label, SchemaType } from "../label";
+import { IteratorLabel, Label, typeNameOf } from "../label";
 import { ReferenceImpl } from "./reference";
 import { Type, baseType } from "./value";
 
 export class IteratorImpl extends ReferenceImpl {
   constructor(
     private inner: Type,
-    private schemaType: SchemaType,
+    private name: string | undefined,
+    private args: JSON | undefined,
     isRequired: boolean,
     base: Option<Type>
   ) {
@@ -14,28 +15,47 @@ export class IteratorImpl extends ReferenceImpl {
   }
 
   get label(): Label<IteratorLabel> {
+    let inner = this.inner.required();
+
     return {
       type: {
         kind: "iterator",
-        schemaType: this.schemaType,
-        of: this.inner.required()
+        of: inner
       },
-      name: ANONYMOUS,
-      templated: false
+      args: this.args,
+      description: `hasMany ${typeNameOf(inner.label.name)}`,
+      name: "hasMany"
     };
   }
 
   required(isRequired = true): Type {
-    return new IteratorImpl(this.inner, this.schemaType, isRequired, this.base);
+    return new IteratorImpl(
+      this.inner,
+      this.name,
+      this.args,
+      isRequired,
+      this.base
+    );
+  }
+
+  named(arg: Option<string>): Type {
+    return new IteratorImpl(
+      this.inner,
+      arg === null ? undefined : arg,
+      this.args,
+      this.isRequired,
+      this.base
+    );
   }
 }
 
 export function hasMany(item: Type, options?: JSON): Type {
-  let schemaType = {
-    name: "hasMany",
-    ...{ args: options }
-  };
-
-  let draftType = new IteratorImpl(baseType(item), schemaType, false, null);
-  return new IteratorImpl(item, schemaType, false, draftType);
+  let draftType = new IteratorImpl(
+    baseType(item),
+    undefined,
+    options,
+    false,
+    null
+  );
+  return new IteratorImpl(item, undefined, options, false, draftType);
 }

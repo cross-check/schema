@@ -1,6 +1,5 @@
 import { Buffer } from "../buffer";
 import formatter, { Formatter } from "../formatter";
-import { Optionality } from "../label";
 import { ReporterDelegate } from "../reporter";
 
 export interface TypescriptOptions {
@@ -21,8 +20,8 @@ const delegate: ReporterDelegate<Buffer, string, TypescriptOptions> = {
   closeDictionary({ buffer, nesting }): void {
     buffer.push(`${pad(nesting * 2)}}`);
   },
-  emitKey({ key, optionality, nesting }): string {
-    return `${pad(nesting * 2)}${formattedKey(key, optionality)}: `;
+  emitKey({ key, required, nesting }): string {
+    return `${pad(nesting * 2)}${formattedKey(key, required)}: `;
   },
   closeValue(): string {
     return ";\n";
@@ -54,26 +53,14 @@ const delegate: ReporterDelegate<Buffer, string, TypescriptOptions> = {
 
   emitPrimitive({ type: { label } }): string {
     return `${label.type.typescript}`;
-  },
-
-  endPrimitive(): void {
-    /* noop */
-  },
-
-  openTemplatedValue() {
-    throw new Error("unimplemented");
-  },
-
-  closeTemplatedValue() {
-    throw new Error("unimplemented");
   }
 };
 
-function formattedKey(key: string, optionality: Optionality): string {
-  if (optionality === Optionality.Optional) {
-    return `${key}?`;
-  } else {
+function formattedKey(key: string, required: boolean): string {
+  if (required) {
     return key;
+  } else {
+    return `${key}?`;
   }
 }
 

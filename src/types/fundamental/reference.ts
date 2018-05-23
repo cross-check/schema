@@ -10,6 +10,7 @@ export abstract class ReferenceImpl implements Type {
   constructor(readonly isRequired: boolean, readonly base: Option<Type>) {}
 
   abstract required(isRequired?: boolean): Type;
+  abstract named(arg: Option<string>): Type;
 
   validation(): ValidationBuilder<unknown> {
     return ANY;

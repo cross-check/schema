@@ -1,6 +1,5 @@
 import { Dict, JSON } from "ts-std";
-import { Type } from "../fundamental/value";
-import { removeUndefined } from "../utils";
+import { LabelledType, Type } from "../fundamental/value";
 
 export enum Optionality {
   Required,
@@ -22,31 +21,61 @@ export function requiredLabel<T extends Label>(label: T): T {
   };
 }
 
-export type Name = { anonymous: true } | { name: string };
-
-export interface Label<T extends TypeLabel = TypeLabel, N extends Name = Name> {
+export interface Label<T extends TypeLabel = TypeLabel> {
   type: T;
-  templated: boolean;
-  name: N;
+
+  // The name of the type constructor
+  name?: string;
+
+  // Any arguments to the type constructor
+  args?: JSON;
+
+  // A registered name for the type, which includes
+  // arguments to the type constructor. The registered
+  // name is optional, and is preferred in formatting
+  // if it exists.
+  registeredName?: string;
+
+  // A human-readable description of the type
+  description: string;
 }
 
-export interface NamedLabel<T extends TypeLabel = TypeLabel> {
-  type: T;
-  templated: boolean;
-  name: { name: string };
+export interface NamedLabel<T extends TypeLabel = TypeLabel> extends Label<T> {
+  name: string;
 }
 
-export interface SchemaType {
+export function typeNameOf(name: string | undefined): string {
+  return name || "";
+}
+
+export function typeDescription(type: Type): string {
+  return type.label.name || "anonymous";
+}
+
+export function template({ type }: Label, name: string): Label {
+  return {
+    type,
+    name,
+    description: name,
+    args: null
+  };
+}
+
+export interface NamedLabel<T extends TypeLabel = TypeLabel> extends Label<T> {
+  type: T;
+  templated: boolean;
   name: string;
   args?: JSON;
 }
 
 export interface PrimitiveLabel {
   kind: "primitive";
-  // TODO: Can this be unified with something else?
-  schemaType: SchemaType;
   description: string;
   typescript: string;
+}
+
+export function isPrimitive(type: Type): type is LabelledType<PrimitiveLabel> {
+  return type.label.type.kind === "primitive";
 }
 
 export interface ListLabel {
@@ -61,13 +90,11 @@ export interface DictionaryLabel {
 
 export interface PointerLabel {
   kind: "pointer";
-  schemaType: SchemaType;
   of: Type;
 }
 
 export interface IteratorLabel {
   kind: "iterator";
-  schemaType: SchemaType;
   of: Type;
 }
 
@@ -83,6 +110,7 @@ export type TypeLabel =
 
 export interface LabelOptions {
   name: string;
+  registeredName?: string;
   args?: string[];
   typescript: string;
   description?: string;
@@ -96,21 +124,15 @@ function buildLabel({
   description
 }: LabelOptions): Label<PrimitiveLabel> {
   return {
-    name: ANONYMOUS,
-    templated: false,
+    name,
+    description: description || "anonymous",
+    args,
     type: {
       kind: "primitive",
-      schemaType: removeUndefined({ name, args }),
       description: description || typescript,
       typescript
     }
   };
-}
-
-export const ANONYMOUS: Name = { anonymous: true };
-
-export function isAnonymous(name: Name): name is { anonymous: true } {
-  return "anonymous" in name;
 }
 
 export { buildLabel as label };

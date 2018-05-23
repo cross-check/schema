@@ -1,6 +1,6 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
 import { Option, unknown } from "ts-std";
-import { ANONYMOUS, Label } from "../label";
+import { Label, typeNameOf } from "../label";
 import { maybe } from "../utils";
 import { Type, baseType, parse, serialize } from "./value";
 
@@ -12,23 +12,35 @@ const isPresentArray = validators.is(
 class ArrayImpl implements Type {
   constructor(
     private itemType: Type,
+    private name: string | undefined,
     readonly isRequired: boolean,
     readonly base: Option<Type>
   ) {}
 
   get label(): Label {
+    let inner = this.itemType.required();
+
     return {
       type: {
         kind: "list",
-        of: this.itemType.required()
+        of: inner
       },
-      name: ANONYMOUS,
-      templated: false
+      name: this.name,
+      description: `hasOne ${typeNameOf(inner.label.name)}`
     };
   }
 
   required(isRequired = true): Type {
-    return new ArrayImpl(this.itemType, isRequired, this.base);
+    return new ArrayImpl(this.itemType, this.name, isRequired, this.base);
+  }
+
+  named(arg: Option<string>): Type {
+    return new ArrayImpl(
+      this.itemType,
+      arg === null ? undefined : arg,
+      this.isRequired,
+      this.base
+    );
   }
 
   serialize(js: any[]): any {
@@ -61,6 +73,6 @@ class ArrayImpl implements Type {
 }
 
 export function List(item: Type): Type {
-  let draftType = new ArrayImpl(baseType(item), false, null);
-  return new ArrayImpl(item, false, draftType);
+  let draftType = new ArrayImpl(baseType(item), undefined, false, null);
+  return new ArrayImpl(item, undefined, false, draftType);
 }

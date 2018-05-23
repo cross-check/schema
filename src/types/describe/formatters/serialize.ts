@@ -39,25 +39,13 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
   },
 
   emitPrimitive({ type, buffer }): void {
-    let { name, args } = type.label.type.schemaType;
+    let { name, args } = type.label;
     buffer.push(`{ "type": ${JSON.stringify(name)}, `);
     if (args !== undefined) {
       buffer.push(`"details": ${JSON.stringify(args)}, `);
     }
 
     buffer.push(`"required": ${type.isRequired} }`);
-  },
-
-  endPrimitive(): void {
-    /* noop */
-  },
-
-  openTemplatedValue() {
-    throw new Error("unimplemented");
-  },
-
-  closeTemplatedValue() {
-    throw new Error("unimplemented");
   }
 };
 
