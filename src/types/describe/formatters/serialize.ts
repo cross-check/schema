@@ -35,7 +35,7 @@ const delegate: ReporterDelegate<Buffer, string, void> = {
   },
 
   emitNamedType({ type: { label }, buffer }): void {
-    buffer.push(`"${label.name}"`);
+    buffer.push(`${JSON.stringify(label.name)}`);
   },
 
   emitPrimitive({ type, buffer }): void {
