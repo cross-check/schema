@@ -10,7 +10,7 @@ function buildSchemaValidation(desc: Dict<Type>): ValidationBuilder<unknown> {
     obj[key] = value!.validation();
   }
 
-  return validators.stricObject(obj);
+  return validators.strictObject(obj);
 }
 
 export interface DictionaryType extends Type {
