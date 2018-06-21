@@ -23,7 +23,7 @@ export class DictionaryImpl implements DictionaryType {
     private typeName: string | undefined,
     readonly isRequired: boolean,
     readonly base: Option<DictionaryType>
-  ) {}
+  ) { }
 
   required(isRequired = true): Type {
     return new DictionaryImpl(this.inner, this.typeName, isRequired, this.base);
