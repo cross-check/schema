@@ -1,6 +1,6 @@
 {
   "name": "@cross-check/schema",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "A library for schema validations",
   "main": "dist/commonjs/src/index.js",
   "module": "dist/modules/src/index.js",
