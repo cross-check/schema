@@ -1,5 +1,5 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
-import { Option, unknown } from "ts-std";
+import { Option, assert, unknown } from "ts-std";
 import { Label, NamedLabel, TypeLabel } from "../label";
 import { maybe } from "../utils";
 
@@ -48,22 +48,61 @@ export function validationFor(
 
 export function serialize<T, C extends (value: T) => unknown>(
   value: T,
+  nullable: false,
+  serializeValue: C
+): ReturnType<C>;
+export function serialize<T, C extends (value: T) => unknown>(
+  value: Option<T>,
+  nullable: true,
+  serializeValue: C
+): ReturnType<C> | null;
+export function serialize<T, C extends (value: T) => unknown>(
+  value: Option<T>,
+  // tslint:disable-next-line:unified-signatures
   nullable: boolean,
   serializeValue: C
-): ReturnType<C> | null | undefined {
-  if (nullable && (value === null || value === undefined)) {
-    return null;
+): ReturnType<C> | null;
+
+export function serialize<T, C extends (value: T) => unknown>(
+  value: Option<T>,
+  nullable: boolean,
+  serializeValue: C
+): ReturnType<C> | null {
+  if (value === null) {
+    assert(
+      nullable,
+      "Serialization error: unexpected null (must validate before serializing)"
+    );
+    return value;
   } else {
     return serializeValue(value) as ReturnType<C>;
   }
 }
 
 export function parse<T, C extends (value: T) => unknown>(
+  value: Option<T>,
+  nullable: true,
+  parseValue: C
+): ReturnType<C> | null;
+export function parse<T, C extends (value: T) => unknown>(
   value: T,
+  nullable: false,
+  parseValue: C
+): ReturnType<C>;
+export function parse<T, C extends (value: T) => unknown>(
+  value: Option<T>,
+  // tslint:disable-next-line:unified-signatures
   nullable: boolean,
   parseValue: C
-): ReturnType<C> | null | undefined {
-  if (nullable && (value === null || value === undefined)) {
+): ReturnType<C> | null;
+
+export function parse<T, C extends (value: T) => unknown>(
+  value: Option<T>,
+  nullable: boolean,
+  parseValue: C
+): ReturnType<C> | null {
+  if (value === null) {
+    assert(nullable, "Parse error: unexpected null.");
     return null;
   } else {
     return parseValue(value) as ReturnType<C>;

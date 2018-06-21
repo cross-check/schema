@@ -1,5 +1,5 @@
 import { ValidationBuilder, validators } from "@cross-check/dsl";
-import { Dict, Option, dict, entries, unknown } from "ts-std";
+import { Dict, Option, assert, dict, entries, unknown } from "ts-std";
 import { DictionaryLabel, Label, typeNameOf } from "../label";
 import { Type, baseType, parse, serialize, validationFor } from "./value";
 
@@ -10,7 +10,7 @@ function buildSchemaValidation(desc: Dict<Type>): ValidationBuilder<unknown> {
     obj[key] = value!.validation();
   }
 
-  return validators.object(obj);
+  return validators.strictObject(obj);
 }
 
 export interface DictionaryType extends Type {
@@ -48,24 +48,40 @@ export class DictionaryImpl implements DictionaryType {
     };
   }
 
-  serialize(js: Dict): Option<Dict> | undefined {
+  serialize(js: Dict): Option<Dict> {
     return serialize(js, !this.isRequired, () => {
       let out: Dict = {};
 
       for (let [key, value] of entries(this.inner)) {
-        out[key] = value!.serialize(js[key]!);
+        assert(
+          key in js,
+          `Serialization error: missing field \`${key}\` (must validate before serializing)`
+        );
+
+        let result = value!.serialize(js[key]);
+
+        if (result !== null) {
+          out[key] = result;
+        }
       }
 
       return out;
     });
   }
 
-  parse(wire: Dict): Option<Dict> | undefined {
+  parse(wire: Dict): Option<Dict> {
     return parse(wire, !this.isRequired, () => {
       let out: Dict = {};
 
       for (let [key, value] of entries(this.inner)) {
-        out[key] = value!.parse(wire[key]);
+        let raw = wire[key];
+
+        if (raw === undefined) {
+          assert(!value!.isRequired, `Parse error: missing field \`${key}\``);
+          raw = null;
+        }
+
+        out[key] = value!.parse(raw);
       }
 
       return out;

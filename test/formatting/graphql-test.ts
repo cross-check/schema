@@ -48,17 +48,17 @@ QUnit.test("detailed", assert => {
       first: SingleLine
       last: SingleLine
     }
-    
+
     type MediumArticleGeo {
       lat: Int!
       long: Int!
     }
-    
+
     type MediumArticleContributors {
       first: SingleLine
       last: SingleLine
     }
-    
+
     type MediumArticle {
       hed: SingleLine!
       dek: String
@@ -90,7 +90,7 @@ QUnit.test("relationships", assert => {
   );
 });
 
-QUnit.todo("pagination with Relay Cursors", assert => {
+QUnit.skip("pagination with Relay Cursors", assert => {
   assert.equal(
     graphql(Bundle, { name: "Bundle", scalarMap: GRAPHQL_SCALAR_MAP }),
 

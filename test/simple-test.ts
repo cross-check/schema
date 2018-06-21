@@ -36,22 +36,27 @@ QUnit.test("string serialization", assert => {
   );
 });
 
-QUnit.test("missing fields", async assert => {
+QUnit.test("all fields are optional in draft mode", async assert => {
   assert.deepEqual(
-    await validateDraft(SimpleArticle, {}),
+    await validateDraft(SimpleArticle, {
+      hed: null,
+      dek: null,
+      body: null
+    }),
     [],
-    "draft schemas can be missing fields"
+    "all fields can be null in drafts"
   );
 });
 
-QUnit.test("type widening works", async assert => {
+QUnit.test("draft mode can accept the widened type", async assert => {
   assert.deepEqual(
     await validateDraft(SimpleArticle, {
-      hed: "Hello world\nNo problem here",
-      dek: "Hello, the cool world!"
+      hed: "Hello world\nMultiline strings are allowed in SingleLine",
+      dek: "Hello, the cool world!",
+      body: null
     }),
     [],
-    "draft schemas can be missing fields"
+    "draft mode can accept the widened type"
   );
 });
 
@@ -59,7 +64,8 @@ QUnit.test("published drafts must be narrow", async assert => {
   assert.deepEqual(
     await validatePublished(SimpleArticle, {
       hed: "Hello world\nProblem here!",
-      dek: "Hello, the cool world!"
+      dek: "Hello, the cool world!",
+      body: null
     }),
     [typeError("string:single-line", "hed"), missingError("body")],
     "published schemas must not be missing fields or have the widened type"
@@ -97,11 +103,11 @@ QUnit.test("serialize", assert => {
   assert.deepEqual(
     SimpleArticle.serialize({
       hed: "Hello world",
+      dek: null,
       body: "The body"
     }),
     {
       hed: "Hello world",
-      dek: null,
       body: "The body"
     }
   );
@@ -129,5 +135,45 @@ QUnit.test("a valid published draft", async assert => {
     }),
     [],
     "a valid draft"
+  );
+});
+
+QUnit.skip("Invalid shape", async assert => {
+  assert.deepEqual(
+    await validatePublished(SimpleArticle, false as any),
+    [typeError("???", "*")],
+    "wrong type"
+  );
+
+  assert.deepEqual(
+    await validatePublished(SimpleArticle, [] as any),
+    [typeError("???", "*")],
+    "wrong type"
+  );
+
+  assert.deepEqual(
+    await validatePublished(SimpleArticle, {}),
+    [typeError("???", "*")],
+    "empty object"
+  );
+
+  assert.deepEqual(
+    await validatePublished(SimpleArticle, {
+      hed: "Hello world",
+      dek: "Hello, the cool world!"
+    }),
+    [typeError("???", "*")],
+    "missing field"
+  );
+
+  assert.deepEqual(
+    await validatePublished(SimpleArticle, {
+      hed: "Hello world",
+      dek: "Hello, the cool world!",
+      body: "Hello!!!",
+      wat: "dis"
+    }),
+    [typeError("???", "*")],
+    "extra fields"
   );
 });
